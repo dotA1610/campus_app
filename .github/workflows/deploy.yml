@@ -22,21 +22,22 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up Flutter
-        uses: flutter-actions/setup-flutter@v3
+      # ✅ Fix for your error: ALWAYS pin flutter-version
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
         with:
-          channel: stable
+          flutter-version: "3.22.3"
+          channel: "stable"
+          cache: true
 
-      - name: Flutter version
-        run: flutter --version
-
-      - name: Install dependencies
+      - name: Flutter Pub Get
         run: flutter pub get
 
-      - name: Build web
+      - name: Build Web
         run: flutter build web --release --base-href "/campus_app/"
 
-      - name: Upload Pages artifact
+      # GitHub Pages expects this action
+      - name: Upload Pages Artifact
         uses: actions/upload-pages-artifact@v3
         with:
           path: build/web
