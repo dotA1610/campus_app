@@ -16,12 +16,6 @@ class ApplyLeavePage extends StatefulWidget {
 }
 
 class _ApplyLeavePageState extends State<ApplyLeavePage> {
-  // --- THEME (locked dashboard vibe) ---
-  static const _bg = Color(0xFF0B0B0F);
-  static const _card = Color(0xFF14141A);
-  static const _card2 = Color(0xFF101014);
-  static const _border = Color(0xFF24242D);
-
   int step = 0;
 
   String leaveType = "Sick";
@@ -50,21 +44,6 @@ class _ApplyLeavePageState extends State<ApplyLeavePage> {
     uploadedDocs = [];
   }
 
-  Widget _cardWrap({
-    required Widget child,
-    EdgeInsets padding = const EdgeInsets.all(16),
-  }) {
-    return Container(
-      padding: padding,
-      decoration: BoxDecoration(
-        color: _card,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: _border),
-      ),
-      child: child,
-    );
-  }
-
   String _stepTitle(int s) {
     if (s == 0) return "Details";
     if (s == 1) return "Documents";
@@ -77,8 +56,36 @@ class _ApplyLeavePageState extends State<ApplyLeavePage> {
     return "Confirm everything before submitting.";
   }
 
+  Widget _cardWrap({
+    required Widget child,
+    required Color cardColor,
+    required Color borderColor,
+    EdgeInsets padding = const EdgeInsets.all(16),
+  }) {
+    return Container(
+      padding: padding,
+      decoration: BoxDecoration(
+        color: cardColor,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: borderColor),
+      ),
+      child: child,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+
+    // Theme-driven colors (works in light + dark)
+    final bg = theme.scaffoldBackgroundColor;
+    final card = theme.cardTheme.color ?? cs.surface;
+    final card2 = cs.surfaceVariant; // secondary surface block
+    final border = cs.outlineVariant; // nice subtle border in both themes
+    final onCard = cs.onSurface;
+    final muted = cs.onSurfaceVariant;
+
     Widget stepBody() {
       if (step == 0) {
         return ApplyLeaveDetailsPage(
@@ -122,10 +129,12 @@ class _ApplyLeavePageState extends State<ApplyLeavePage> {
       if (startDate == null || endDate == null) {
         return Center(
           child: _cardWrap(
+            cardColor: card,
+            borderColor: border,
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Text("Dates not selected. Please go back."),
+                Text("Dates not selected. Please go back.", style: TextStyle(color: onCard)),
                 const SizedBox(height: 12),
                 ElevatedButton(
                   onPressed: () => setState(() => step = 0),
@@ -156,13 +165,15 @@ class _ApplyLeavePageState extends State<ApplyLeavePage> {
     }
 
     return Container(
-      color: _bg,
+      color: bg,
       child: ListView(
         physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.all(18),
         children: [
           // HEADER
           _cardWrap(
+            cardColor: card,
+            borderColor: border,
             padding: const EdgeInsets.all(18),
             child: Row(
               children: [
@@ -170,13 +181,13 @@ class _ApplyLeavePageState extends State<ApplyLeavePage> {
                   width: 48,
                   height: 48,
                   decoration: BoxDecoration(
-                    color: _card2,
+                    color: card2,
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: _border),
+                    border: Border.all(color: border),
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.edit_calendar_outlined,
-                    color: Colors.white,
+                    color: onCard,
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -184,17 +195,18 @@ class _ApplyLeavePageState extends State<ApplyLeavePage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                      Text(
                         "Apply for Leave",
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.w900,
+                          color: onCard,
                         ),
                       ),
                       const SizedBox(height: 6),
                       Text(
                         _stepSubtitle(step),
-                        style: const TextStyle(color: Colors.grey, fontSize: 12),
+                        style: TextStyle(color: muted, fontSize: 12),
                       ),
                     ],
                   ),
@@ -202,16 +214,16 @@ class _ApplyLeavePageState extends State<ApplyLeavePage> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                   decoration: BoxDecoration(
-                    color: _card2,
+                    color: card2,
                     borderRadius: BorderRadius.circular(999),
-                    border: Border.all(color: _border),
+                    border: Border.all(color: border),
                   ),
                   child: Text(
                     "Step ${step + 1}/3 • ${_stepTitle(step)}",
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w800,
-                      color: Colors.grey,
+                      color: muted,
                     ),
                   ),
                 ),
@@ -223,13 +235,14 @@ class _ApplyLeavePageState extends State<ApplyLeavePage> {
 
           // STEPPER / PROGRESS
           _cardWrap(
+            cardColor: card,
+            borderColor: border,
             padding: const EdgeInsets.all(14),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 LayoutBuilder(
                   builder: (ctx, c) {
-                    // responsive spacing (prevents overflow on small widths)
                     final tight = c.maxWidth < 520;
                     final lineMargin = tight ? 6.0 : 10.0;
 
@@ -238,20 +251,38 @@ class _ApplyLeavePageState extends State<ApplyLeavePage> {
                         Expanded(
                           child: Align(
                             alignment: Alignment.centerLeft,
-                            child: _StepDot(index: 0, current: step, label: "Details"),
+                            child: _StepDot(
+                              index: 0,
+                              current: step,
+                              label: "Details",
+                              card2: card2,
+                              border: border,
+                            ),
                           ),
                         ),
                         _StepLine(active: step >= 1, margin: lineMargin),
                         Expanded(
                           child: Center(
-                            child: _StepDot(index: 1, current: step, label: "Documents"),
+                            child: _StepDot(
+                              index: 1,
+                              current: step,
+                              label: "Documents",
+                              card2: card2,
+                              border: border,
+                            ),
                           ),
                         ),
                         _StepLine(active: step >= 2, margin: lineMargin),
                         Expanded(
                           child: Align(
                             alignment: Alignment.centerRight,
-                            child: _StepDot(index: 2, current: step, label: "Review"),
+                            child: _StepDot(
+                              index: 2,
+                              current: step,
+                              label: "Review",
+                              card2: card2,
+                              border: border,
+                            ),
                           ),
                         ),
                       ],
@@ -263,7 +294,7 @@ class _ApplyLeavePageState extends State<ApplyLeavePage> {
                   value: (step + 1) / 3,
                   minHeight: 6,
                   borderRadius: BorderRadius.circular(999),
-                  backgroundColor: _card2,
+                  backgroundColor: card2,
                 ),
               ],
             ),
@@ -273,6 +304,8 @@ class _ApplyLeavePageState extends State<ApplyLeavePage> {
 
           // BODY CARD
           _cardWrap(
+            cardColor: card,
+            borderColor: border,
             padding: const EdgeInsets.all(14),
             child: stepBody(),
           ),
@@ -287,30 +320,38 @@ class _StepDot extends StatelessWidget {
   final int current;
   final String label;
 
+  // theme-driven surfaces
+  final Color card2;
+  final Color border;
+
   const _StepDot({
     required this.index,
     required this.current,
     required this.label,
+    required this.card2,
+    required this.border,
   });
-
-  static const _card2 = Color(0xFF101014);
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+
     final done = current > index;
     final active = current == index;
 
     final Color ring = done
         ? Colors.green
         : active
-            ? const Color(0xFF7C4DFF)
-            : Colors.grey;
+            ? cs.primary
+            : cs.onSurfaceVariant;
 
     final Color fill = done
-        ? Colors.green.withOpacity(0.18)
+        ? Colors.green.withOpacity(0.14)
         : active
-            ? const Color(0xFF7C4DFF).withOpacity(0.18)
-            : _card2;
+            ? cs.primary.withOpacity(0.14)
+            : card2;
+
+    final labelColor = (active || done) ? cs.onSurface : cs.onSurfaceVariant;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -336,7 +377,7 @@ class _StepDot extends StatelessWidget {
           style: TextStyle(
             fontSize: 11,
             fontWeight: FontWeight.w800,
-            color: active || done ? Colors.white : Colors.grey,
+            color: labelColor,
           ),
         ),
       ],
@@ -355,12 +396,14 @@ class _StepLine extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+
     return Expanded(
       child: Container(
         height: 2,
         margin: EdgeInsets.symmetric(horizontal: margin),
         decoration: BoxDecoration(
-          color: active ? const Color(0xFF7C4DFF) : const Color(0xFF24242D),
+          color: active ? cs.primary : cs.outlineVariant,
           borderRadius: BorderRadius.circular(999),
         ),
       ),

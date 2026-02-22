@@ -11,12 +11,6 @@ class SubjectRequestPage extends StatefulWidget {
 }
 
 class _SubjectRequestPageState extends State<SubjectRequestPage> {
-  // --- THEME (match your web vibe) ---
-  static const _bg = Color(0xFF0B0B0F);
-  static const _card = Color(0xFF14141A);
-  static const _card2 = Color(0xFF101014);
-  static const _border = Color(0xFF24242D);
-
   bool loading = true;
   String? error;
 
@@ -114,7 +108,7 @@ class _SubjectRequestPageState extends State<SubjectRequestPage> {
           ..addAll(ids);
       });
     } catch (_) {
-      // keep silent
+      // silent
     }
   }
 
@@ -152,7 +146,8 @@ class _SubjectRequestPageState extends State<SubjectRequestPage> {
     if (actionType == "DROP" && !isEnrolled) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-            content: Text("You can only DROP a subject you are enrolled in.")),
+          content: Text("You can only DROP a subject you are enrolled in."),
+        ),
       );
       return;
     }
@@ -204,28 +199,36 @@ class _SubjectRequestPageState extends State<SubjectRequestPage> {
     }
   }
 
-  // ---------------- UI HELPERS ----------------
+  // ---------------- UI HELPERS (THEME AWARE) ----------------
 
   Widget _cardWrap(
-      {required Widget child, EdgeInsets padding = const EdgeInsets.all(16)}) {
+    BuildContext context, {
+    required Widget child,
+    EdgeInsets padding = const EdgeInsets.all(16),
+  }) {
+    final cs = Theme.of(context).colorScheme;
     return Container(
       padding: padding,
       decoration: BoxDecoration(
-        color: _card,
+        color: cs.surface,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: _border),
+        border: Border.all(color: cs.outlineVariant),
       ),
       child: child,
     );
   }
 
-  Widget _sectionHeader({
+  Widget _sectionHeader(
+    BuildContext context, {
     required String title,
     String? subtitle,
     Widget? trailing,
     IconData? icon,
   }) {
+    final cs = Theme.of(context).colorScheme;
+
     return _cardWrap(
+      context,
       padding: const EdgeInsets.all(18),
       child: Row(
         children: [
@@ -234,11 +237,11 @@ class _SubjectRequestPageState extends State<SubjectRequestPage> {
               width: 48,
               height: 48,
               decoration: BoxDecoration(
-                color: _card2,
+                color: cs.surfaceVariant,
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: _border),
+                border: Border.all(color: cs.outlineVariant),
               ),
-              child: Icon(icon, color: Colors.white),
+              child: Icon(icon, color: cs.onSurface),
             ),
             const SizedBox(width: 12),
           ],
@@ -246,13 +249,23 @@ class _SubjectRequestPageState extends State<SubjectRequestPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title,
-                    style:
-                        const TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w900,
+                    color: cs.onSurface,
+                  ),
+                ),
                 if (subtitle != null) ...[
                   const SizedBox(height: 6),
-                  Text(subtitle,
-                      style: const TextStyle(color: Colors.grey, fontSize: 12)),
+                  Text(
+                    subtitle,
+                    style: TextStyle(
+                      color: cs.onSurfaceVariant,
+                      fontSize: 12,
+                    ),
+                  ),
                 ],
               ],
             ),
@@ -263,23 +276,36 @@ class _SubjectRequestPageState extends State<SubjectRequestPage> {
     );
   }
 
-  Widget _pill(String text,
-      {bool selected = false, VoidCallback? onTap, IconData? icon}) {
+  Widget _pill(
+    BuildContext context,
+    String text, {
+    bool selected = false,
+    VoidCallback? onTap,
+    IconData? icon,
+  }) {
+    final cs = Theme.of(context).colorScheme;
+
     return InkWell(
       borderRadius: BorderRadius.circular(999),
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
         decoration: BoxDecoration(
-          color: selected ? _card2 : _card,
+          color: selected ? cs.surfaceVariant : cs.surface,
           borderRadius: BorderRadius.circular(999),
-          border: Border.all(color: selected ? Colors.white24 : _border),
+          border: Border.all(
+            color: selected ? cs.primary.withOpacity(0.45) : cs.outlineVariant,
+          ),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             if (icon != null) ...[
-              Icon(icon, size: 16, color: selected ? Colors.white : Colors.grey),
+              Icon(
+                icon,
+                size: 16,
+                color: selected ? cs.onSurface : cs.onSurfaceVariant,
+              ),
               const SizedBox(width: 8),
             ],
             Text(
@@ -287,7 +313,7 @@ class _SubjectRequestPageState extends State<SubjectRequestPage> {
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w800,
-                color: selected ? Colors.white : Colors.grey,
+                color: selected ? cs.onSurface : cs.onSurfaceVariant,
               ),
             ),
           ],
@@ -296,7 +322,10 @@ class _SubjectRequestPageState extends State<SubjectRequestPage> {
     );
   }
 
-  Widget _badge({required String text, required Color color}) {
+  Widget _badge({
+    required String text,
+    required Color color,
+  }) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
@@ -315,34 +344,43 @@ class _SubjectRequestPageState extends State<SubjectRequestPage> {
     );
   }
 
-  Widget _emptyState({
+  Widget _emptyState(
+    BuildContext context, {
     required IconData icon,
     required String title,
     required String subtitle,
     Widget? action,
   }) {
+    final cs = Theme.of(context).colorScheme;
+
     return _cardWrap(
+      context,
       child: Row(
         children: [
           Container(
             width: 48,
             height: 48,
             decoration: BoxDecoration(
-              color: _card2,
+              color: cs.surfaceVariant,
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: _border),
+              border: Border.all(color: cs.outlineVariant),
             ),
-            child: Icon(icon, color: Colors.grey),
+            child: Icon(icon, color: cs.onSurfaceVariant),
           ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: const TextStyle(fontWeight: FontWeight.w900)),
+                Text(
+                  title,
+                  style: TextStyle(fontWeight: FontWeight.w900, color: cs.onSurface),
+                ),
                 const SizedBox(height: 4),
-                Text(subtitle,
-                    style: const TextStyle(color: Colors.grey, fontSize: 12)),
+                Text(
+                  subtitle,
+                  style: TextStyle(color: cs.onSurfaceVariant, fontSize: 12),
+                ),
               ],
             ),
           ),
@@ -352,7 +390,9 @@ class _SubjectRequestPageState extends State<SubjectRequestPage> {
     );
   }
 
-  Widget _enrolledTile(Map<String, dynamic> row) {
+  Widget _enrolledTile(BuildContext context, Map<String, dynamic> row) {
+    final cs = Theme.of(context).colorScheme;
+
     final subjectRaw = row['subject'];
     final subject = subjectRaw is Map
         ? Map<String, dynamic>.from(subjectRaw)
@@ -365,9 +405,9 @@ class _SubjectRequestPageState extends State<SubjectRequestPage> {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: _card,
+        color: cs.surface,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: _border),
+        border: Border.all(color: cs.outlineVariant),
       ),
       child: Row(
         children: [
@@ -375,11 +415,11 @@ class _SubjectRequestPageState extends State<SubjectRequestPage> {
             width: 44,
             height: 44,
             decoration: BoxDecoration(
-              color: _card2,
+              color: cs.surfaceVariant,
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: _border),
+              border: Border.all(color: cs.outlineVariant),
             ),
-            child: const Icon(Icons.book_outlined, color: Colors.grey),
+            child: Icon(Icons.book_outlined, color: cs.onSurfaceVariant),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -388,13 +428,16 @@ class _SubjectRequestPageState extends State<SubjectRequestPage> {
               children: [
                 Text(
                   "$code • $name",
-                  style: const TextStyle(fontWeight: FontWeight.w900),
+                  style: TextStyle(
+                    fontWeight: FontWeight.w900,
+                    color: cs.onSurface,
+                  ),
                   overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 4),
                 Text(
                   "$credits credit hour(s)",
-                  style: const TextStyle(color: Colors.grey, fontSize: 12),
+                  style: TextStyle(color: cs.onSurfaceVariant, fontSize: 12),
                 ),
               ],
             ),
@@ -405,26 +448,32 @@ class _SubjectRequestPageState extends State<SubjectRequestPage> {
     );
   }
 
-  Widget _buildEnrolledSection(double maxWidth) {
+  Widget _buildEnrolledSection(BuildContext context) {
     return _cardWrap(
+      context,
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              const Expanded(
+              Expanded(
                 child: Text(
                   "Currently Enrolled",
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900),
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w900,
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
                 ),
               ),
-              _pill("Reload", icon: Icons.refresh, onTap: _loadEnrolledOnly),
+              _pill(context, "Reload", icon: Icons.refresh, onTap: _loadEnrolledOnly),
             ],
           ),
           const SizedBox(height: 10),
           if (enrolled.isEmpty)
             _emptyState(
+              context,
               icon: Icons.inbox_outlined,
               title: "No enrolled subjects yet",
               subtitle: "Once a subject is enrolled, it will appear here.",
@@ -433,18 +482,19 @@ class _SubjectRequestPageState extends State<SubjectRequestPage> {
             LayoutBuilder(
               builder: (ctx, c) {
                 final wideGrid = c.maxWidth >= 820;
+
                 if (!wideGrid) {
                   return Column(
                     children: enrolled
                         .map((e) => Padding(
                               padding: const EdgeInsets.only(bottom: 12),
-                              child: _enrolledTile(e),
+                              child: _enrolledTile(context, e),
                             ))
                         .toList(),
                   );
                 }
 
-                final tiles = enrolled.map(_enrolledTile).toList();
+                final tiles = enrolled.map((e) => _enrolledTile(context, e)).toList();
                 return Wrap(
                   spacing: 12,
                   runSpacing: 12,
@@ -462,21 +512,27 @@ class _SubjectRequestPageState extends State<SubjectRequestPage> {
     );
   }
 
-  Widget _buildRequestFormSection() {
+  Widget _buildRequestFormSection(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     final sid = selectedSubjectId;
     final isEnrolled = sid != null && enrolledSubjectIds.contains(sid);
 
     return _cardWrap(
+      context,
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              const Expanded(
+              Expanded(
                 child: Text(
                   "Submit Request",
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900),
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w900,
+                    color: cs.onSurface,
+                  ),
                 ),
               ),
               if (sid != null)
@@ -487,24 +543,26 @@ class _SubjectRequestPageState extends State<SubjectRequestPage> {
             ],
           ),
           const SizedBox(height: 12),
-          const Text("Subject", style: TextStyle(color: Colors.grey, fontSize: 12)),
+
+          Text("Subject", style: TextStyle(color: cs.onSurfaceVariant, fontSize: 12)),
           const SizedBox(height: 8),
+
           DropdownButtonFormField<String>(
             value: selectedSubjectId,
-            dropdownColor: _card2,
-            iconEnabledColor: Colors.white,
-            style: const TextStyle(color: Colors.white),
+            dropdownColor: cs.surface,
+            iconEnabledColor: cs.onSurface,
+            style: TextStyle(color: cs.onSurface),
             decoration: InputDecoration(
               filled: true,
-              fillColor: _card2,
+              fillColor: cs.surfaceVariant,
               border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(14),
-                borderSide: const BorderSide(color: _border),
+                borderSide: BorderSide(color: cs.outlineVariant),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(14),
-                borderSide: const BorderSide(color: Colors.white24),
+                borderSide: BorderSide(color: cs.primary.withOpacity(0.55)),
               ),
             ),
             items: subjects.map((s) {
@@ -512,8 +570,8 @@ class _SubjectRequestPageState extends State<SubjectRequestPage> {
                 value: s['id'].toString(),
                 child: Text(
                   _subjectLabel(s),
-                  style: const TextStyle(color: Colors.white),
                   overflow: TextOverflow.ellipsis,
+                  style: TextStyle(color: cs.onSurface),
                 ),
               );
             }).toList(),
@@ -525,20 +583,25 @@ class _SubjectRequestPageState extends State<SubjectRequestPage> {
               });
             },
           ),
+
           const SizedBox(height: 14),
-          const Text("Action", style: TextStyle(color: Colors.grey, fontSize: 12)),
+
+          Text("Action", style: TextStyle(color: cs.onSurfaceVariant, fontSize: 12)),
           const SizedBox(height: 8),
+
           Wrap(
             spacing: 10,
             runSpacing: 10,
             children: [
               _pill(
+                context,
                 "ADD",
                 icon: Icons.library_add,
                 selected: actionType == "ADD",
                 onTap: () => setState(() => actionType = "ADD"),
               ),
               _pill(
+                context,
                 "DROP",
                 icon: Icons.delete_outline,
                 selected: actionType == "DROP",
@@ -546,30 +609,35 @@ class _SubjectRequestPageState extends State<SubjectRequestPage> {
               ),
             ],
           ),
+
           const SizedBox(height: 14),
-          const Text("Reason", style: TextStyle(color: Colors.grey, fontSize: 12)),
+
+          Text("Reason", style: TextStyle(color: cs.onSurfaceVariant, fontSize: 12)),
           const SizedBox(height: 8),
+
           TextField(
             controller: reasonController,
             maxLines: 4,
-            style: const TextStyle(color: Colors.white),
+            style: TextStyle(color: cs.onSurface),
             decoration: InputDecoration(
               hintText: "Why do you want to add/drop this subject?",
-              hintStyle: const TextStyle(color: Colors.grey),
+              hintStyle: TextStyle(color: cs.onSurfaceVariant),
               filled: true,
-              fillColor: _card2,
+              fillColor: cs.surfaceVariant,
               border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(14),
-                borderSide: const BorderSide(color: _border),
+                borderSide: BorderSide(color: cs.outlineVariant),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(14),
-                borderSide: const BorderSide(color: Colors.white24),
+                borderSide: BorderSide(color: cs.primary.withOpacity(0.55)),
               ),
             ),
           ),
+
           const SizedBox(height: 14),
+
           SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
@@ -578,17 +646,20 @@ class _SubjectRequestPageState extends State<SubjectRequestPage> {
               label: Text(submitting ? "Submitting..." : "Submit Request"),
             ),
           ),
+
           const SizedBox(height: 8),
+
           _cardWrap(
+            context,
             padding: const EdgeInsets.all(12),
-            child: const Row(
+            child: Row(
               children: [
-                Icon(Icons.info_outline, color: Colors.grey, size: 18),
-                SizedBox(width: 10),
+                Icon(Icons.info_outline, color: cs.onSurfaceVariant, size: 18),
+                const SizedBox(width: 10),
                 Expanded(
                   child: Text(
                     "Your request will be reviewed by your HOD. Approved ADD enrolls you. Approved DROP removes you.",
-                    style: TextStyle(color: Colors.grey, fontSize: 12),
+                    style: TextStyle(color: cs.onSurfaceVariant, fontSize: 12),
                   ),
                 ),
               ],
@@ -608,6 +679,7 @@ class _SubjectRequestPageState extends State<SubjectRequestPage> {
     if (error != null) {
       return Center(
         child: _cardWrap(
+          context,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -622,11 +694,12 @@ class _SubjectRequestPageState extends State<SubjectRequestPage> {
 
     if (subjects.isEmpty) {
       return Container(
-        color: _bg,
+        color: Theme.of(context).scaffoldBackgroundColor,
         child: Center(
           child: Padding(
             padding: const EdgeInsets.all(18),
             child: _emptyState(
+              context,
               icon: Icons.warning_amber_rounded,
               title: "No subjects found",
               subtitle: "Your subject table is empty OR SELECT is blocked (RLS).",
@@ -638,13 +711,14 @@ class _SubjectRequestPageState extends State<SubjectRequestPage> {
     }
 
     return Container(
-      color: _bg,
+      color: Theme.of(context).scaffoldBackgroundColor,
       child: RefreshIndicator(
         onRefresh: _loadAll,
         child: ListView(
           padding: const EdgeInsets.all(18),
           children: [
             _sectionHeader(
+              context,
               title: "Add/Drop Subject",
               subtitle:
                   "Submit request → HOD reviews → your enrollment updates after approval.",
@@ -657,10 +731,10 @@ class _SubjectRequestPageState extends State<SubjectRequestPage> {
             ),
             const SizedBox(height: 14),
 
-            // ✅ ALWAYS STACKED (full screen OR half screen)
-            _buildEnrolledSection(double.infinity),
+            // ✅ ALWAYS STACKED
+            _buildEnrolledSection(context),
             const SizedBox(height: 14),
-            _buildRequestFormSection(),
+            _buildRequestFormSection(context),
           ],
         ),
       ),

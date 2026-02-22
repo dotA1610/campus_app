@@ -1,10 +1,6 @@
 import 'package:flutter/material.dart';
 
 class ApplyLeaveDetailsPage extends StatelessWidget {
-  // --- THEME (match dashboard vibe) ---
-  static const _card2 = Color(0xFF101014);
-  static const _border = Color(0xFF24242D);
-
   final String leaveType;
   final DateTime? startDate;
   final DateTime? endDate;
@@ -37,12 +33,22 @@ class ApplyLeaveDetailsPage extends StatelessWidget {
     required ValueChanged<DateTime> onPicked,
   }) async {
     final now = DateTime.now();
+
     final picked = await showDatePicker(
       context: context,
       firstDate: DateTime(now.year - 1),
       lastDate: DateTime(now.year + 2),
       initialDate: current ?? now,
+      builder: (ctx, child) {
+        // make date picker follow your theme properly
+        final theme = Theme.of(ctx);
+        return Theme(
+          data: theme,
+          child: child!,
+        );
+      },
     );
+
     if (picked != null) onPicked(picked);
   }
 
@@ -53,20 +59,42 @@ class ApplyLeaveDetailsPage extends StatelessWidget {
 
   String _m(int m) {
     const months = [
-      "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-      "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+      "Jan",
+      "Feb",
+      "Mar",
+      "Apr",
+      "May",
+      "Jun",
+      "Jul",
+      "Aug",
+      "Sep",
+      "Oct",
+      "Nov",
+      "Dec"
     ];
     return months[m - 1];
   }
 
-  Widget _sectionTitle(String t, {String? subtitle}) {
+  Widget _sectionTitle(BuildContext context, String t, {String? subtitle}) {
+    final cs = Theme.of(context).colorScheme;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(t, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w900)),
+        Text(
+          t,
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w900,
+            color: cs.onSurface,
+          ),
+        ),
         if (subtitle != null) ...[
           const SizedBox(height: 4),
-          Text(subtitle, style: const TextStyle(color: Colors.grey, fontSize: 12)),
+          Text(
+            subtitle,
+            style: TextStyle(color: cs.onSurfaceVariant, fontSize: 12),
+          ),
         ],
       ],
     );
@@ -74,11 +102,20 @@ class ApplyLeaveDetailsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+
+    final card2 = cs.surfaceVariant;
+    final border = cs.outlineVariant;
+    final onCard = cs.onSurface;
+    final muted = cs.onSurfaceVariant;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Leave type
         _sectionTitle(
+          context,
           "Leave Type",
           subtitle: "Select the category that best describes your leave.",
         ),
@@ -155,6 +192,7 @@ class ApplyLeaveDetailsPage extends StatelessWidget {
 
         // Duration
         _sectionTitle(
+          context,
           "Duration",
           subtitle: "Pick the start and end date (inclusive).",
         ),
@@ -192,26 +230,29 @@ class ApplyLeaveDetailsPage extends StatelessWidget {
 
         // Reason
         _sectionTitle(
+          context,
           "Reason",
           subtitle: "Explain briefly. You can upload documents in the next step.",
         ),
         const SizedBox(height: 10),
 
-        // ✅ IMPORTANT FIX: no controller inside build()
+        // ✅ Theme-driven TextField (works in light + dark)
         TextField(
           minLines: 3,
           maxLines: 5,
-          style: const TextStyle(color: Colors.white),
-          decoration: const InputDecoration(
+          style: TextStyle(color: onCard),
+          decoration: InputDecoration(
             hintText: "Example: Fever and doctor appointment...",
-            hintStyle: TextStyle(color: Colors.grey),
+            hintStyle: TextStyle(color: muted),
             filled: true,
-            fillColor: _card2,
+            fillColor: card2,
             enabledBorder: OutlineInputBorder(
-              borderSide: BorderSide(color: _border),
+              borderRadius: BorderRadius.circular(14),
+              borderSide: BorderSide(color: border),
             ),
             focusedBorder: OutlineInputBorder(
-              borderSide: BorderSide(color: Colors.white24),
+              borderRadius: BorderRadius.circular(14),
+              borderSide: BorderSide(color: cs.primary, width: 1.4),
             ),
           ),
           onChanged: onReasonChanged,
@@ -219,13 +260,12 @@ class ApplyLeaveDetailsPage extends StatelessWidget {
 
         const SizedBox(height: 6),
 
-        // Show current value (so it doesn't look empty on rebuild)
         if (reason.trim().isNotEmpty)
           Padding(
             padding: const EdgeInsets.only(top: 6),
             child: Text(
               "Current: ${reason.trim()}",
-              style: const TextStyle(color: Colors.grey, fontSize: 11),
+              style: TextStyle(color: muted, fontSize: 11),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
@@ -257,9 +297,6 @@ class ApplyLeaveDetailsPage extends StatelessWidget {
 // ---------- small widgets used only here ----------
 
 class _TypeTile extends StatelessWidget {
-  static const _card2 = Color(0xFF101014);
-  static const _border = Color(0xFF24242D);
-
   final String label;
   final IconData icon;
   final bool selected;
@@ -274,9 +311,11 @@ class _TypeTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bg = selected ? Colors.white : _card2;
-    final fg = selected ? Colors.black : Colors.white;
-    final br = selected ? Colors.white30 : _border;
+    final cs = Theme.of(context).colorScheme;
+
+    final bg = selected ? cs.primary : cs.surfaceVariant;
+    final fg = selected ? cs.onPrimary : cs.onSurface;
+    final br = selected ? cs.primary.withOpacity(0.35) : cs.outlineVariant;
 
     return InkWell(
       borderRadius: BorderRadius.circular(16),
@@ -299,8 +338,7 @@ class _TypeTile extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
               ),
             ),
-            if (selected)
-              const Icon(Icons.check_circle, size: 18, color: Colors.black),
+            if (selected) Icon(Icons.check_circle, size: 18, color: fg),
           ],
         ),
       ),
@@ -309,9 +347,6 @@ class _TypeTile extends StatelessWidget {
 }
 
 class _DateField extends StatelessWidget {
-  static const _card2 = Color(0xFF101014);
-  static const _border = Color(0xFF24242D);
-
   final String label;
   final String value;
   final VoidCallback onTap;
@@ -324,35 +359,46 @@ class _DateField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+
+    final card2 = cs.surfaceVariant;
+    final border = cs.outlineVariant;
+    final muted = cs.onSurfaceVariant;
+    final onCard = cs.onSurface;
+
     return InkWell(
       borderRadius: BorderRadius.circular(16),
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: _card2,
+          color: card2,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: _border),
+          border: Border.all(color: border),
         ),
         child: Row(
           children: [
-            const Icon(Icons.calendar_month_outlined, size: 18, color: Colors.grey),
+            Icon(Icons.calendar_month_outlined, size: 18, color: muted),
             const SizedBox(width: 10),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(label, style: const TextStyle(fontSize: 11, color: Colors.grey)),
+                  Text(label, style: TextStyle(fontSize: 11, color: muted)),
                   const SizedBox(height: 4),
                   Text(
                     value,
-                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: onCard,
+                    ),
                     overflow: TextOverflow.ellipsis,
                   ),
                 ],
               ),
             ),
-            const Icon(Icons.chevron_right, color: Colors.grey),
+            Icon(Icons.chevron_right, color: muted),
           ],
         ),
       ),
@@ -361,9 +407,6 @@ class _DateField extends StatelessWidget {
 }
 
 class _InfoPill extends StatelessWidget {
-  static const _card2 = Color(0xFF101014);
-  static const _border = Color(0xFF24242D);
-
   final String left;
   final String title;
   final IconData icon;
@@ -376,12 +419,19 @@ class _InfoPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+
+    final card2 = cs.surfaceVariant;
+    final border = cs.outlineVariant;
+    final muted = cs.onSurfaceVariant;
+    final onCard = cs.onSurface;
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color: _card2,
+        color: card2,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: _border),
+        border: Border.all(color: border),
       ),
       child: Row(
         children: [
@@ -390,21 +440,24 @@ class _InfoPill extends StatelessWidget {
             height: 28,
             alignment: Alignment.center,
             decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.25),
+              color: cs.surface.withOpacity(0.55),
               borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: _border),
+              border: Border.all(color: border),
             ),
-            child: Text(left, style: const TextStyle(fontWeight: FontWeight.w900)),
+            child: Text(
+              left,
+              style: TextStyle(fontWeight: FontWeight.w900, color: onCard),
+            ),
           ),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
               title,
-              style: const TextStyle(fontWeight: FontWeight.w800),
+              style: TextStyle(fontWeight: FontWeight.w800, color: onCard),
               overflow: TextOverflow.ellipsis,
             ),
           ),
-          Icon(icon, size: 18, color: Colors.grey),
+          Icon(icon, size: 18, color: muted),
         ],
       ),
     );

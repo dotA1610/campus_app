@@ -9,12 +9,6 @@ class HodSubjectRequestsPage extends StatefulWidget {
 }
 
 class _HodSubjectRequestsPageState extends State<HodSubjectRequestsPage> {
-  // --- THEME (match dashboard vibe) ---
-  static const _bg = Color(0xFF0B0B0F);
-  static const _card = Color(0xFF14141A);
-  static const _card2 = Color(0xFF101014);
-  static const _border = Color(0xFF24242D);
-
   bool loading = true;
   String? error;
 
@@ -105,9 +99,6 @@ class _HodSubjectRequestsPageState extends State<HodSubjectRequestsPage> {
     final action = actionType.toUpperCase().trim();
 
     if (action == "ADD") {
-      // Upsert-like behavior:
-      // - If enrollment exists -> set ENROLLED
-      // - Else insert ENROLLED
       final existing = await supabase
           .from('subject_enrollments')
           .select('id')
@@ -136,8 +127,6 @@ class _HodSubjectRequestsPageState extends State<HodSubjectRequestsPage> {
         });
       }
     } else if (action == "DROP") {
-      // Only update existing enrollment to DROPPED
-      // (If it doesn't exist, do nothing — DROP should only apply to enrolled subjects)
       await supabase.from('subject_enrollments').update({
         'status': 'DROPPED',
       }).match({
@@ -159,13 +148,11 @@ class _HodSubjectRequestsPageState extends State<HodSubjectRequestsPage> {
     final subjectId = _safe(row['subject_id'], '');
     final actionType = _safe(row['action_type'], '');
 
-    // 1) Update request status first
     await supabase.from('subject_requests').update({
       'status': newStatus,
       'hod_remark': hodRemark.trim().isEmpty ? null : hodRemark.trim(),
     }).match({'id': requestId});
 
-    // 2) If Approved -> apply enrollment change
     if (newStatus == "Approved") {
       if (studentUserId.isEmpty || subjectId.isEmpty) {
         throw "Missing student_user_id or subject_id in subject_requests row.";
@@ -215,23 +202,27 @@ class _HodSubjectRequestsPageState extends State<HodSubjectRequestsPage> {
     return "${m[d.month - 1]} ${d.day}, ${d.year}";
   }
 
-  Widget _cardWrap({
+  Widget _cardWrap(
+    BuildContext context, {
     required Widget child,
     EdgeInsets padding = const EdgeInsets.all(16),
   }) {
+    final cs = Theme.of(context).colorScheme;
     return Container(
       padding: padding,
       decoration: BoxDecoration(
-        color: _card,
+        color: cs.surface,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: _border),
+        border: Border.all(color: cs.outlineVariant),
       ),
       child: child,
     );
   }
 
-  Widget _filterPill(String label) {
+  Widget _filterPill(BuildContext context, String label) {
+    final cs = Theme.of(context).colorScheme;
     final selected = filter == label;
+
     return InkWell(
       borderRadius: BorderRadius.circular(999),
       onTap: () async {
@@ -241,16 +232,18 @@ class _HodSubjectRequestsPageState extends State<HodSubjectRequestsPage> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
-          color: selected ? _card2 : _card,
+          color: selected ? cs.surfaceVariant : cs.surface,
           borderRadius: BorderRadius.circular(999),
-          border: Border.all(color: selected ? Colors.white24 : _border),
+          border: Border.all(
+            color: selected ? cs.primary.withOpacity(0.45) : cs.outlineVariant,
+          ),
         ),
         child: Text(
           label,
           style: TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.w800,
-            color: selected ? Colors.white : Colors.grey,
+            color: selected ? cs.onSurface : cs.onSurfaceVariant,
           ),
         ),
       ),
@@ -264,27 +257,35 @@ class _HodSubjectRequestsPageState extends State<HodSubjectRequestsPage> {
 
     final ok = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: _card,
-        title: Text(newStatus),
-        content: TextField(
-          controller: controller,
-          maxLines: 3,
-          decoration: const InputDecoration(
-            labelText: "HOD Remark (optional)",
+      builder: (ctx) {
+        final cs = Theme.of(ctx).colorScheme;
+
+        return AlertDialog(
+          backgroundColor: cs.surface,
+          surfaceTintColor: cs.surface,
+          title: Text(
+            newStatus,
+            style: TextStyle(color: cs.onSurface, fontWeight: FontWeight.w800),
           ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text("Cancel"),
+          content: TextField(
+            controller: controller,
+            maxLines: 3,
+            decoration: const InputDecoration(
+              labelText: "HOD Remark (optional)",
+            ),
           ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: Text(newStatus),
-          ),
-        ],
-      ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text("Cancel"),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: Text(newStatus),
+            ),
+          ],
+        );
+      },
     );
 
     if (ok != true) return;
@@ -317,7 +318,48 @@ class _HodSubjectRequestsPageState extends State<HodSubjectRequestsPage> {
     }
   }
 
-  Widget _requestCard(Map<String, dynamic> row) {
+  Widget _emptyState(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+
+    return _cardWrap(
+      context,
+      child: Row(
+        children: [
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: cs.surfaceVariant,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: cs.outlineVariant),
+            ),
+            child: Icon(Icons.inbox_outlined, color: cs.onSurfaceVariant),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  "No requests found",
+                  style: TextStyle(fontWeight: FontWeight.w900, color: cs.onSurface),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  "Try another filter or check back later.",
+                  style: TextStyle(color: cs.onSurfaceVariant, fontSize: 12),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _requestCard(BuildContext context, Map<String, dynamic> row) {
+    final cs = Theme.of(context).colorScheme;
+
     final status = _safe(row['status'], 'Pending');
     final statusColor = _statusColor(status);
 
@@ -344,6 +386,7 @@ class _HodSubjectRequestsPageState extends State<HodSubjectRequestsPage> {
 
     return _HoverCard(
       child: _cardWrap(
+        context,
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -355,9 +398,9 @@ class _HodSubjectRequestsPageState extends State<HodSubjectRequestsPage> {
                   width: 44,
                   height: 44,
                   decoration: BoxDecoration(
-                    color: _card2,
+                    color: cs.surfaceVariant,
                     borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: _border),
+                    border: Border.all(color: cs.outlineVariant),
                   ),
                   child: Icon(
                     _actionIcon(actionType),
@@ -368,7 +411,11 @@ class _HodSubjectRequestsPageState extends State<HodSubjectRequestsPage> {
                 Expanded(
                   child: Text(
                     "$studentName ($studentId)",
-                    style: const TextStyle(fontWeight: FontWeight.w900),
+                    style: TextStyle(
+                      fontWeight: FontWeight.w900,
+                      color: cs.onSurface,
+                    ),
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
                 Container(
@@ -400,14 +447,17 @@ class _HodSubjectRequestsPageState extends State<HodSubjectRequestsPage> {
 
             Text(
               "Faculty: $faculty • Submitted: $createdAt",
-              style: const TextStyle(color: Colors.grey, fontSize: 12),
+              style: TextStyle(color: cs.onSurfaceVariant, fontSize: 12),
             ),
 
             const SizedBox(height: 12),
 
             Text(
               "$actionType • $subjectCode — $subjectName ($creditHours cr)",
-              style: const TextStyle(fontWeight: FontWeight.w800),
+              style: TextStyle(
+                fontWeight: FontWeight.w800,
+                color: cs.onSurface,
+              ),
             ),
 
             const SizedBox(height: 8),
@@ -416,18 +466,21 @@ class _HodSubjectRequestsPageState extends State<HodSubjectRequestsPage> {
               width: double.infinity,
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: _card2,
+                color: cs.surfaceVariant,
                 borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: _border),
+                border: Border.all(color: cs.outlineVariant),
               ),
-              child: Text(reason),
+              child: Text(
+                reason,
+                style: TextStyle(color: cs.onSurface),
+              ),
             ),
 
             if (hodRemark.isNotEmpty) ...[
               const SizedBox(height: 10),
               Text(
                 "HOD Remark: $hodRemark",
-                style: const TextStyle(fontSize: 12, color: Colors.grey),
+                style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
               ),
             ],
 
@@ -464,6 +517,7 @@ class _HodSubjectRequestsPageState extends State<HodSubjectRequestsPage> {
     if (error != null) {
       return Center(
         child: _cardWrap(
+          context,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -476,22 +530,36 @@ class _HodSubjectRequestsPageState extends State<HodSubjectRequestsPage> {
       );
     }
 
+    final cs = Theme.of(context).colorScheme;
+
     return Container(
-      color: _bg,
+      color: Theme.of(context).scaffoldBackgroundColor,
       child: RefreshIndicator(
         onRefresh: _load,
         child: ListView(
           padding: const EdgeInsets.all(18),
           children: [
             _cardWrap(
+              context,
               padding: const EdgeInsets.all(18),
               child: Row(
-                children: const [
-                  Icon(Icons.admin_panel_settings, color: Colors.white),
-                  SizedBox(width: 12),
-                  Text(
-                    "HOD Subject Requests",
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
+                children: [
+                  Icon(Icons.library_add, color: cs.onSurface),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      "HOD Subject Requests",
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w900,
+                        color: cs.onSurface,
+                      ),
+                    ),
+                  ),
+                  TextButton.icon(
+                    onPressed: _load,
+                    icon: const Icon(Icons.refresh, size: 18),
+                    label: const Text("Refresh"),
                   ),
                 ],
               ),
@@ -501,27 +569,18 @@ class _HodSubjectRequestsPageState extends State<HodSubjectRequestsPage> {
               spacing: 10,
               runSpacing: 10,
               children: [
-                _filterPill("All"),
-                _filterPill("Pending"),
-                _filterPill("Approved"),
-                _filterPill("Rejected"),
+                _filterPill(context, "All"),
+                _filterPill(context, "Pending"),
+                _filterPill(context, "Approved"),
+                _filterPill(context, "Rejected"),
               ],
             ),
             const SizedBox(height: 14),
-            if (items.isEmpty)
-              const Center(
-                child: Padding(
-                  padding: EdgeInsets.only(top: 60),
-                  child: Text(
-                    "No requests found.",
-                    style: TextStyle(color: Colors.grey),
-                  ),
-                ),
-              ),
+            if (items.isEmpty) _emptyState(context),
             ...items.map(
               (row) => Padding(
                 padding: const EdgeInsets.only(bottom: 12),
-                child: _requestCard(row),
+                child: _requestCard(context, row),
               ),
             ),
           ],
@@ -552,6 +611,7 @@ class _HoverCardState extends State<_HoverCard> {
       onExit: (_) => setState(() => hovering = false),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 160),
+        curve: Curves.easeOut,
         transform: hovering
             ? (Matrix4.identity()..translate(0.0, -2.0))
             : Matrix4.identity(),

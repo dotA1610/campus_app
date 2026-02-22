@@ -10,12 +10,6 @@ class ApplicationStatusPage extends StatefulWidget {
 }
 
 class _ApplicationStatusPageState extends State<ApplicationStatusPage> {
-  // --- THEME (match locked UI) ---
-  static const _bg = Color(0xFF0B0B0F);
-  static const _card = Color(0xFF14141A);
-  static const _card2 = Color(0xFF101014);
-  static const _border = Color(0xFF24242D);
-
   bool loading = true;
   String? error;
 
@@ -120,7 +114,6 @@ class _ApplicationStatusPageState extends State<ApplicationStatusPage> {
       final user = supabase.auth.currentUser;
       if (user == null) throw "Not logged in";
 
-      // ✅ Avoid eq() chaining issues: use match() map
       final Map<String, Object> matchMap = {
         'student_user_id': user.id,
       };
@@ -163,23 +156,27 @@ class _ApplicationStatusPageState extends State<ApplicationStatusPage> {
     }
   }
 
-  Widget _cardWrap({
+  Widget _cardWrap(
+    BuildContext context, {
     required Widget child,
     EdgeInsets padding = const EdgeInsets.all(16),
   }) {
+    final cs = Theme.of(context).colorScheme;
     return Container(
       padding: padding,
       decoration: BoxDecoration(
-        color: _card,
+        color: cs.surface,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: _border),
+        border: Border.all(color: cs.outlineVariant),
       ),
       child: child,
     );
   }
 
-  Widget _filterPill(String label) {
+  Widget _filterPill(BuildContext context, String label) {
+    final cs = Theme.of(context).colorScheme;
     final selected = filter == label;
+
     return InkWell(
       borderRadius: BorderRadius.circular(999),
       onTap: () async {
@@ -189,47 +186,57 @@ class _ApplicationStatusPageState extends State<ApplicationStatusPage> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
-          color: selected ? _card2 : _card,
+          color: selected ? cs.surfaceVariant : cs.surface,
           borderRadius: BorderRadius.circular(999),
-          border: Border.all(color: selected ? Colors.white24 : _border),
+          border: Border.all(
+            color: selected ? cs.primary.withOpacity(0.45) : cs.outlineVariant,
+          ),
         ),
         child: Text(
           label,
           style: TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.w700,
-            color: selected ? Colors.white : Colors.grey,
+            color: selected ? cs.onSurface : cs.onSurfaceVariant,
           ),
         ),
       ),
     );
   }
 
-  Widget _emptyState() {
+  Widget _emptyState(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+
     return _cardWrap(
+      context,
       child: Row(
         children: [
           Container(
             width: 44,
             height: 44,
             decoration: BoxDecoration(
-              color: _card2,
+              color: cs.surfaceVariant,
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: _border),
+              border: Border.all(color: cs.outlineVariant),
             ),
-            child: const Icon(Icons.inbox_outlined, color: Colors.grey),
+            child: Icon(Icons.inbox_outlined, color: cs.onSurfaceVariant),
           ),
           const SizedBox(width: 12),
-          const Expanded(
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text("No applications found",
-                    style: TextStyle(fontWeight: FontWeight.w800)),
-                SizedBox(height: 4),
+                Text(
+                  "No applications found",
+                  style: TextStyle(
+                    fontWeight: FontWeight.w800,
+                    color: cs.onSurface,
+                  ),
+                ),
+                const SizedBox(height: 4),
                 Text(
                   "Try a different filter or submit a new leave request.",
-                  style: TextStyle(color: Colors.grey, fontSize: 12),
+                  style: TextStyle(color: cs.onSurfaceVariant, fontSize: 12),
                 ),
               ],
             ),
@@ -239,7 +246,9 @@ class _ApplicationStatusPageState extends State<ApplicationStatusPage> {
     );
   }
 
-  Widget _leaveCard(Map<String, dynamic> row) {
+  Widget _leaveCard(BuildContext context, Map<String, dynamic> row) {
+    final cs = Theme.of(context).colorScheme;
+
     final status = _safe(row['status'], 'Pending');
     final color = _statusColor(status);
 
@@ -254,6 +263,7 @@ class _ApplicationStatusPageState extends State<ApplicationStatusPage> {
     final attachments = _parseAttachmentUrls(attachmentRaw);
 
     return _cardWrap(
+      context,
       padding: const EdgeInsets.all(14),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -269,9 +279,9 @@ class _ApplicationStatusPageState extends State<ApplicationStatusPage> {
                     width: 44,
                     height: 44,
                     decoration: BoxDecoration(
-                      color: _card2,
+                      color: cs.surfaceVariant,
                       borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: _border),
+                      border: Border.all(color: cs.outlineVariant),
                     ),
                     child: Icon(_statusIcon(status), color: color),
                   ),
@@ -282,13 +292,16 @@ class _ApplicationStatusPageState extends State<ApplicationStatusPage> {
                       children: [
                         Text(
                           "$leaveType • $start → $end",
-                          style: const TextStyle(fontWeight: FontWeight.w800),
+                          style: TextStyle(
+                            fontWeight: FontWeight.w800,
+                            color: cs.onSurface,
+                          ),
                           overflow: TextOverflow.ellipsis,
                         ),
                         const SizedBox(height: 4),
                         Text(
                           "$days day(s) • Submitted: $createdAt",
-                          style: const TextStyle(color: Colors.grey, fontSize: 12),
+                          style: TextStyle(color: cs.onSurfaceVariant, fontSize: 12),
                           overflow: TextOverflow.ellipsis,
                         ),
                       ],
@@ -323,7 +336,6 @@ class _ApplicationStatusPageState extends State<ApplicationStatusPage> {
                 );
               }
 
-              // stack badge below on small widths
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -342,17 +354,19 @@ class _ApplicationStatusPageState extends State<ApplicationStatusPage> {
             width: double.infinity,
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: _card2,
+              color: cs.surfaceVariant,
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: _border),
+              border: Border.all(color: cs.outlineVariant),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text("Reason",
-                    style: TextStyle(color: Colors.grey, fontSize: 12)),
+                Text("Reason", style: TextStyle(color: cs.onSurfaceVariant, fontSize: 12)),
                 const SizedBox(height: 6),
-                Text(reason, style: const TextStyle(fontWeight: FontWeight.w600)),
+                Text(
+                  reason,
+                  style: TextStyle(fontWeight: FontWeight.w600, color: cs.onSurface),
+                ),
               ],
             ),
           ),
@@ -365,15 +379,19 @@ class _ApplicationStatusPageState extends State<ApplicationStatusPage> {
             child: ExpansionTile(
               tilePadding: EdgeInsets.zero,
               childrenPadding: EdgeInsets.zero,
-              title: const Text(
+              title: Text(
                 "Details",
-                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800),
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w800,
+                  color: cs.onSurface,
+                ),
               ),
               subtitle: Text(
                 (remark.isEmpty && attachments.isEmpty)
                     ? "No additional details"
                     : "View HOD remark / attachments",
-                style: const TextStyle(color: Colors.grey, fontSize: 12),
+                style: TextStyle(color: cs.onSurfaceVariant, fontSize: 12),
               ),
               children: [
                 if (remark.isNotEmpty)
@@ -383,23 +401,24 @@ class _ApplicationStatusPageState extends State<ApplicationStatusPage> {
                       width: double.infinity,
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: _card2,
+                        color: cs.surfaceVariant,
                         borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: _border),
+                        border: Border.all(color: cs.outlineVariant),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text("HOD Remark",
-                              style: TextStyle(color: Colors.grey, fontSize: 12)),
+                          Text("HOD Remark",
+                              style: TextStyle(color: cs.onSurfaceVariant, fontSize: 12)),
                           const SizedBox(height: 6),
-                          Text(remark,
-                              style: const TextStyle(fontWeight: FontWeight.w600)),
+                          Text(
+                            remark,
+                            style: TextStyle(fontWeight: FontWeight.w600, color: cs.onSurface),
+                          ),
                         ],
                       ),
                     ),
                   ),
-
                 if (attachments.isNotEmpty)
                   Padding(
                     padding: const EdgeInsets.only(top: 10),
@@ -407,15 +426,15 @@ class _ApplicationStatusPageState extends State<ApplicationStatusPage> {
                       width: double.infinity,
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: _card2,
+                        color: cs.surfaceVariant,
                         borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: _border),
+                        border: Border.all(color: cs.outlineVariant),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text("Attachments",
-                              style: TextStyle(color: Colors.grey, fontSize: 12)),
+                          Text("Attachments",
+                              style: TextStyle(color: cs.onSurfaceVariant, fontSize: 12)),
                           const SizedBox(height: 10),
                           ...attachments.map((url) {
                             final name = _fileNameFromUrl(url);
@@ -435,7 +454,6 @@ class _ApplicationStatusPageState extends State<ApplicationStatusPage> {
                       ),
                     ),
                   ),
-
                 const SizedBox(height: 6),
               ],
             ),
@@ -452,6 +470,7 @@ class _ApplicationStatusPageState extends State<ApplicationStatusPage> {
     if (error != null) {
       return Center(
         child: _cardWrap(
+          context,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -464,8 +483,10 @@ class _ApplicationStatusPageState extends State<ApplicationStatusPage> {
       );
     }
 
+    final cs = Theme.of(context).colorScheme;
+
     return Container(
-      color: _bg,
+      color: Theme.of(context).scaffoldBackgroundColor,
       child: RefreshIndicator(
         onRefresh: _load,
         child: ListView(
@@ -473,6 +494,7 @@ class _ApplicationStatusPageState extends State<ApplicationStatusPage> {
           children: [
             // Header
             _cardWrap(
+              context,
               padding: const EdgeInsets.all(18),
               child: Row(
                 children: [
@@ -480,25 +502,29 @@ class _ApplicationStatusPageState extends State<ApplicationStatusPage> {
                     width: 48,
                     height: 48,
                     decoration: BoxDecoration(
-                      color: _card2,
+                      color: cs.surfaceVariant,
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: _border),
+                      border: Border.all(color: cs.outlineVariant),
                     ),
-                    child: const Icon(Icons.history, color: Colors.white),
+                    child: Icon(Icons.history, color: cs.onSurface),
                   ),
                   const SizedBox(width: 12),
-                  const Expanded(
+                  Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
                           "My Leave Applications",
-                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w900,
+                            color: cs.onSurface,
+                          ),
                         ),
-                        SizedBox(height: 6),
+                        const SizedBox(height: 6),
                         Text(
                           "Track status, review HOD remarks, and open attachments.",
-                          style: TextStyle(color: Colors.grey, fontSize: 12),
+                          style: TextStyle(color: cs.onSurfaceVariant, fontSize: 12),
                         ),
                       ],
                     ),
@@ -514,21 +540,21 @@ class _ApplicationStatusPageState extends State<ApplicationStatusPage> {
               spacing: 10,
               runSpacing: 10,
               children: [
-                _filterPill("All"),
-                _filterPill("Pending"),
-                _filterPill("Approved"),
-                _filterPill("Rejected"),
+                _filterPill(context, "All"),
+                _filterPill(context, "Pending"),
+                _filterPill(context, "Approved"),
+                _filterPill(context, "Rejected"),
               ],
             ),
 
             const SizedBox(height: 14),
 
-            if (items.isEmpty) _emptyState(),
+            if (items.isEmpty) _emptyState(context),
 
             ...items.map(
               (row) => Padding(
                 padding: const EdgeInsets.only(bottom: 12),
-                child: _leaveCard(row),
+                child: _leaveCard(context, row),
               ),
             ),
           ],

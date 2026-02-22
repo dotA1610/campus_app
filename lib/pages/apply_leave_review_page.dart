@@ -31,11 +31,6 @@ class ApplyLeaveReviewPage extends StatefulWidget {
 }
 
 class _ApplyLeaveReviewPageState extends State<ApplyLeaveReviewPage> {
-  // --- THEME (match dashboard vibe) ---
-  static const _card = Color(0xFF14141A);
-  static const _card2 = Color(0xFF101014);
-  static const _border = Color(0xFF24242D);
-
   bool submitting = false;
 
   String _fmt(DateTime d) {
@@ -61,21 +56,6 @@ class _ApplyLeaveReviewPageState extends State<ApplyLeaveReviewPage> {
     }
   }
 
-  Widget _cardWrap({
-    required Widget child,
-    EdgeInsets padding = const EdgeInsets.all(16),
-  }) {
-    return Container(
-      padding: padding,
-      decoration: BoxDecoration(
-        color: _card,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: _border),
-      ),
-      child: child,
-    );
-  }
-
   Future<void> _handleSubmit() async {
     if (submitting) return;
 
@@ -87,7 +67,6 @@ class _ApplyLeaveReviewPageState extends State<ApplyLeaveReviewPage> {
           .where((u) => u.isNotEmpty)
           .toList();
 
-      // ✅ Store multiple URLs newline-separated (simple + works with your HOD page)
       final attachmentUrl = urls.join('\n');
 
       await submitLeaveApplication(
@@ -113,9 +92,28 @@ class _ApplyLeaveReviewPageState extends State<ApplyLeaveReviewPage> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+
+    final card = cs.surface;
+    final card2 = cs.surfaceVariant;
+    final border = cs.outlineVariant;
+    final onCard = cs.onSurface;
+    final muted = cs.onSurfaceVariant;
+
+    Widget cardWrap({required Widget child, EdgeInsets padding = const EdgeInsets.all(16)}) {
+      return Container(
+        padding: padding,
+        decoration: BoxDecoration(
+          color: card,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: border),
+        ),
+        child: child,
+      );
+    }
+
     final durationText =
         "${_fmt(widget.startDate)} → ${_fmt(widget.endDate)} (${widget.totalDays} day(s))";
-
     final reasonText = _safe(widget.reason, "-");
 
     final attachmentNames = widget.uploadedDocs.map((m) {
@@ -126,107 +124,110 @@ class _ApplyLeaveReviewPageState extends State<ApplyLeaveReviewPage> {
       return "Attachment";
     }).toList();
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _cardWrap(
-          padding: const EdgeInsets.all(18),
-          child: Row(
-            children: [
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: _card2,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: _border),
+    return DefaultTextStyle.merge(
+      style: TextStyle(color: onCard),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          cardWrap(
+            padding: const EdgeInsets.all(18),
+            child: Row(
+              children: [
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: card2,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: border),
+                  ),
+                  child: Icon(Icons.fact_check_outlined, color: onCard),
                 ),
-                child: const Icon(Icons.fact_check_outlined, color: Colors.white),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        "Review Application",
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: onCard),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        "Verify everything before final submission to the HOD.",
+                        style: TextStyle(fontSize: 12, color: muted),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 16),
+
+          _ReviewTile(
+            icon: Icons.medical_services_outlined,
+            title: "Leave Type",
+            value: "${widget.leaveType} Leave",
+          ),
+          const SizedBox(height: 12),
+          _ReviewTile(
+            icon: Icons.calendar_month_outlined,
+            title: "Duration",
+            value: durationText,
+          ),
+          const SizedBox(height: 12),
+          _ReviewTile(
+            icon: Icons.description_outlined,
+            title: "Reason",
+            value: reasonText,
+          ),
+          const SizedBox(height: 12),
+          _AttachmentsTile(items: attachmentNames),
+
+          const SizedBox(height: 12),
+
+          cardWrap(
+            padding: const EdgeInsets.all(12),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(Icons.info_outline, size: 18, color: muted),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    "By submitting, you confirm the information provided is accurate.",
+                    style: TextStyle(fontSize: 12, color: muted),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 18),
+
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: submitting ? null : widget.onBack,
+                  icon: const Icon(Icons.arrow_back),
+                  label: const Text("Back"),
+                ),
               ),
               const SizedBox(width: 12),
-              const Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      "Review Application",
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
-                    ),
-                    SizedBox(height: 6),
-                    Text(
-                      "Verify everything before final submission to the HOD.",
-                      style: TextStyle(fontSize: 12, color: Colors.grey),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-
-        const SizedBox(height: 16),
-
-        _ReviewTile(
-          icon: Icons.medical_services_outlined,
-          title: "Leave Type",
-          value: "${widget.leaveType} Leave",
-        ),
-        const SizedBox(height: 12),
-        _ReviewTile(
-          icon: Icons.calendar_month_outlined,
-          title: "Duration",
-          value: durationText,
-        ),
-        const SizedBox(height: 12),
-        _ReviewTile(
-          icon: Icons.description_outlined,
-          title: "Reason",
-          value: reasonText,
-        ),
-        const SizedBox(height: 12),
-        _AttachmentsTile(items: attachmentNames),
-
-        const SizedBox(height: 12),
-
-        _cardWrap(
-          padding: const EdgeInsets.all(12),
-          child: const Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Icon(Icons.info_outline, size: 18, color: Colors.grey),
-              SizedBox(width: 10),
               Expanded(
-                child: Text(
-                  "By submitting, you confirm the information provided is accurate.",
-                  style: TextStyle(fontSize: 12, color: Colors.grey),
+                child: ElevatedButton.icon(
+                  onPressed: submitting ? null : _handleSubmit,
+                  icon: const Icon(Icons.send),
+                  label: Text(submitting ? "Submitting..." : "Submit"),
                 ),
               ),
             ],
           ),
-        ),
-
-        const SizedBox(height: 18),
-
-        Row(
-          children: [
-            Expanded(
-              child: OutlinedButton.icon(
-                onPressed: submitting ? null : widget.onBack,
-                icon: const Icon(Icons.arrow_back),
-                label: const Text("Back"),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: ElevatedButton.icon(
-                onPressed: submitting ? null : _handleSubmit,
-                icon: const Icon(Icons.send),
-                label: Text(submitting ? "Submitting..." : "Submit"),
-              ),
-            ),
-          ],
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
@@ -242,17 +243,22 @@ class _ReviewTile extends StatelessWidget {
     required this.value,
   });
 
-  static const _card2 = Color(0xFF101014);
-  static const _border = Color(0xFF24242D);
-
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+
+    final card = cs.surface;
+    final card2 = cs.surfaceVariant;
+    final border = cs.outlineVariant;
+    final muted = cs.onSurfaceVariant;
+    final onCard = cs.onSurface;
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
       decoration: BoxDecoration(
-        color: const Color(0xFF14141A),
+        color: card,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: _border),
+        border: Border.all(color: border),
       ),
       child: Row(
         children: [
@@ -260,22 +266,22 @@ class _ReviewTile extends StatelessWidget {
             width: 42,
             height: 42,
             decoration: BoxDecoration(
-              color: _card2,
+              color: card2,
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: _border),
+              border: Border.all(color: border),
             ),
-            child: Icon(icon, size: 18, color: Colors.grey),
+            child: Icon(icon, size: 18, color: muted),
           ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                Text(title, style: TextStyle(fontSize: 12, color: muted)),
                 const SizedBox(height: 6),
                 Text(
                   value,
-                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800),
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: onCard),
                 ),
               ],
             ),
@@ -291,19 +297,24 @@ class _AttachmentsTile extends StatelessWidget {
 
   const _AttachmentsTile({required this.items});
 
-  static const _card2 = Color(0xFF101014);
-  static const _border = Color(0xFF24242D);
-
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+
+    final card = cs.surface;
+    final card2 = cs.surfaceVariant;
+    final border = cs.outlineVariant;
+    final muted = cs.onSurfaceVariant;
+    final onCard = cs.onSurface;
+
     final hasItems = items.isNotEmpty;
 
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: const Color(0xFF14141A),
+        color: card,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: _border),
+        border: Border.all(color: border),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -312,27 +323,23 @@ class _AttachmentsTile extends StatelessWidget {
             width: 42,
             height: 42,
             decoration: BoxDecoration(
-              color: _card2,
+              color: card2,
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: _border),
+              border: Border.all(color: border),
             ),
-            child: const Icon(Icons.attach_file, size: 18, color: Colors.grey),
+            child: Icon(Icons.attach_file, size: 18, color: muted),
           ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text("Attachments", style: TextStyle(fontSize: 12, color: Colors.grey)),
+                Text("Attachments", style: TextStyle(fontSize: 12, color: muted)),
                 const SizedBox(height: 8),
                 if (!hasItems)
-                  const Text(
+                  Text(
                     "No file uploaded",
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.grey,
-                    ),
+                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: muted),
                   )
                 else
                   ...items.map(
@@ -340,12 +347,12 @@ class _AttachmentsTile extends StatelessWidget {
                       padding: const EdgeInsets.only(bottom: 8),
                       child: Row(
                         children: [
-                          const Text("• ", style: TextStyle(fontWeight: FontWeight.w900)),
+                          Text("• ", style: TextStyle(fontWeight: FontWeight.w900, color: onCard)),
                           Expanded(
                             child: Text(
                               name,
                               overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+                              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: onCard),
                             ),
                           ),
                         ],

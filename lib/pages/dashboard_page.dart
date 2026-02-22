@@ -16,12 +16,6 @@ class DashboardPage extends StatefulWidget {
 }
 
 class _DashboardPageState extends State<DashboardPage> {
-  // --- THEME COLORS (locked UI) ---
-  static const _bg = Color(0xFF0B0B0F);
-  static const _card = Color(0xFF14141A);
-  static const _card2 = Color(0xFF101014);
-  static const _border = Color(0xFF24242D);
-
   bool loading = true;
   String? error;
 
@@ -107,28 +101,61 @@ class _DashboardPageState extends State<DashboardPage> {
     return Icons.hourglass_bottom;
   }
 
-  Widget _cardWrap({
+  // Theme-aware "card wrapper"
+  Widget _cardWrap(
+    BuildContext context, {
     required Widget child,
     EdgeInsets padding = const EdgeInsets.all(16),
   }) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+
+    final Color cardColor =
+        theme.cardTheme.color ?? cs.surface; // works for dark+light
+    final Color borderColor =
+        cs.outlineVariant.withOpacity(theme.brightness == Brightness.dark ? 0.55 : 0.8);
+
     return Container(
       padding: padding,
       decoration: BoxDecoration(
-        color: _card,
+        color: cardColor,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: _border),
+        border: Border.all(color: borderColor),
       ),
       child: child,
     );
   }
 
+  // Theme-aware inner surface (for little boxes inside cards)
+  BoxDecoration _innerBoxDeco(BuildContext context, {double radius = 16}) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+
+    final inner = cs.surfaceVariant.withOpacity(
+      theme.brightness == Brightness.dark ? 0.35 : 0.6,
+    );
+    final border = cs.outlineVariant.withOpacity(
+      theme.brightness == Brightness.dark ? 0.45 : 0.7,
+    );
+
+    return BoxDecoration(
+      color: inner,
+      borderRadius: BorderRadius.circular(radius),
+      border: Border.all(color: border),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+
     if (loading) return const Center(child: CircularProgressIndicator());
 
     if (error != null) {
       return Center(
         child: _cardWrap(
+          context,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -149,8 +176,7 @@ class _DashboardPageState extends State<DashboardPage> {
     final batch = _safe(profile?['batch']);
 
     final latestStatus = _safe(latestLeave?['status'], '');
-    final latestColor =
-        latestLeave == null ? Colors.grey : _statusColor(latestStatus);
+    final latestColor = latestLeave == null ? Colors.grey : _statusColor(latestStatus);
 
     final latestTitle = latestLeave == null
         ? "No leave applications yet"
@@ -161,7 +187,7 @@ class _DashboardPageState extends State<DashboardPage> {
         : "${_safe(latestLeave!['total_days'], '-') } day(s)";
 
     return Container(
-      color: _bg,
+      color: theme.scaffoldBackgroundColor, // ✅ theme-aware background
       child: RefreshIndicator(
         onRefresh: _load,
         child: LayoutBuilder(
@@ -169,18 +195,15 @@ class _DashboardPageState extends State<DashboardPage> {
             final isWide = c.maxWidth >= 980;
 
             final headerCard = _cardWrap(
+              context,
               padding: const EdgeInsets.all(18),
               child: Row(
                 children: [
                   Container(
                     width: 56,
                     height: 56,
-                    decoration: BoxDecoration(
-                      color: _card2,
-                      borderRadius: BorderRadius.circular(18),
-                      border: Border.all(color: _border),
-                    ),
-                    child: const Icon(Icons.person, color: Colors.white),
+                    decoration: _innerBoxDeco(context, radius: 18),
+                    child: Icon(Icons.person, color: theme.iconTheme.color ?? cs.onSurface),
                   ),
                   const SizedBox(width: 14),
                   Expanded(
@@ -189,10 +212,10 @@ class _DashboardPageState extends State<DashboardPage> {
                       children: [
                         Text(
                           "Welcome back, $name 👋",
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w800,
-                          ),
+                          style: theme.textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.w800,
+                              ) ??
+                              const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
                           overflow: TextOverflow.ellipsis,
                         ),
                         const SizedBox(height: 6),
@@ -215,23 +238,27 @@ class _DashboardPageState extends State<DashboardPage> {
             );
 
             final quickActionCard = _cardWrap(
+              context,
               padding: const EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     "Quick Action",
-                    style: TextStyle(color: Colors.grey, fontSize: 12),
+                    style: theme.textTheme.bodySmall?.copyWith(color: Colors.grey) ??
+                        const TextStyle(color: Colors.grey, fontSize: 12),
                   ),
                   const SizedBox(height: 10),
-                  const Text(
+                  Text(
                     "Apply for Leave",
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
+                    style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800) ??
+                        const TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
                   ),
                   const SizedBox(height: 6),
-                  const Text(
+                  Text(
                     "Submit a new request for HOD approval.",
-                    style: TextStyle(color: Colors.grey, fontSize: 12),
+                    style: theme.textTheme.bodySmall?.copyWith(color: Colors.grey) ??
+                        const TextStyle(color: Colors.grey, fontSize: 12),
                   ),
                   const SizedBox(height: 12),
                   SizedBox(
@@ -247,17 +274,20 @@ class _DashboardPageState extends State<DashboardPage> {
             );
 
             final leaveSummaryCard = _cardWrap(
+              context,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     "Leave Summary",
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
+                    style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800) ??
+                        const TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
                   ),
                   const SizedBox(height: 6),
-                  const Text(
+                  Text(
                     "Overview of your leave application statuses.",
-                    style: TextStyle(color: Colors.grey, fontSize: 12),
+                    style: theme.textTheme.bodySmall?.copyWith(color: Colors.grey) ??
+                        const TextStyle(color: Colors.grey, fontSize: 12),
                   ),
                   const SizedBox(height: 14),
                   LayoutBuilder(
@@ -316,40 +346,33 @@ class _DashboardPageState extends State<DashboardPage> {
               borderRadius: BorderRadius.circular(18),
               onTap: widget.onRecentActivityTap,
               child: _cardWrap(
+                context,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       "Recent Activity",
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
+                      style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800) ??
+                          const TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
                     ),
                     const SizedBox(height: 6),
-                    const Text(
+                    Text(
                       "Tap to open your leave application history.",
-                      style: TextStyle(color: Colors.grey, fontSize: 12),
+                      style: theme.textTheme.bodySmall?.copyWith(color: Colors.grey) ??
+                          const TextStyle(color: Colors.grey, fontSize: 12),
                     ),
                     const SizedBox(height: 14),
                     Container(
                       padding: const EdgeInsets.all(14),
-                      decoration: BoxDecoration(
-                        color: _card2,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: _border),
-                      ),
+                      decoration: _innerBoxDeco(context, radius: 16),
                       child: Row(
                         children: [
                           Container(
                             width: 42,
                             height: 42,
-                            decoration: BoxDecoration(
-                              color: _card,
-                              borderRadius: BorderRadius.circular(14),
-                              border: Border.all(color: _border),
-                            ),
+                            decoration: _innerBoxDeco(context, radius: 14),
                             child: Icon(
-                              latestLeave == null
-                                  ? Icons.history
-                                  : _statusIcon(latestStatus),
+                              latestLeave == null ? Icons.history : _statusIcon(latestStatus),
                               color: latestLeave == null ? Colors.grey : latestColor,
                             ),
                           ),
@@ -360,21 +383,22 @@ class _DashboardPageState extends State<DashboardPage> {
                               children: [
                                 Text(
                                   latestTitle,
-                                  style: const TextStyle(fontWeight: FontWeight.w700),
+                                  style: theme.textTheme.bodyMedium?.copyWith(
+                                        fontWeight: FontWeight.w700,
+                                      ) ??
+                                      const TextStyle(fontWeight: FontWeight.w700),
                                   overflow: TextOverflow.ellipsis,
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
                                   latestSubtitle,
-                                  style: const TextStyle(
-                                    color: Colors.grey,
-                                    fontSize: 12,
-                                  ),
+                                  style: theme.textTheme.bodySmall?.copyWith(color: Colors.grey) ??
+                                      const TextStyle(color: Colors.grey, fontSize: 12),
                                 ),
                               ],
                             ),
                           ),
-                          Icon(Icons.chevron_right, color: Colors.grey.shade400),
+                          Icon(Icons.chevron_right, color: Colors.grey.shade500),
                         ],
                       ),
                     ),
@@ -422,30 +446,15 @@ class _DashboardPageState extends State<DashboardPage> {
               },
             );
 
-            // ✅ FIX: Force Apply for Leave card BELOW Welcome card ALWAYS
-            // (No more side-by-side row for header + quickAction)
+            // ✅ Always stacked: Welcome THEN Apply-for-leave (works for wide + half screen)
             Widget topSection() {
-              if (!isWide) {
-                return Column(
-                  children: [
-                    headerCard,
-                    const SizedBox(height: 12),
-                    quickActionCard,
-                  ],
-                );
-              }
-
-              // Wide screen: still stack vertically, but optionally constrain width
               return Column(
                 children: [
                   headerCard,
                   const SizedBox(height: 12),
-                  quickActionCard,
+                  quickActionCard, // ✅ full width now (no constraints)
                 ],
               );
-
-            
-              
             }
 
             return ListView(
@@ -482,28 +491,32 @@ class _DashboardPageState extends State<DashboardPage> {
 }
 
 // ------------------------------------------------------
-// UI Components
+// UI Components (Theme-aware)
 // ------------------------------------------------------
 
 class _Pill extends StatelessWidget {
   final String label;
   const _Pill({required this.label});
 
-  static const _bg = Color(0xFF101014);
-  static const _border = Color(0xFF24242D);
-
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+
+    final bg = cs.surfaceVariant.withOpacity(theme.brightness == Brightness.dark ? 0.28 : 0.55);
+    final border = cs.outlineVariant.withOpacity(theme.brightness == Brightness.dark ? 0.45 : 0.7);
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
       decoration: BoxDecoration(
-        color: _bg,
+        color: bg,
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: _border),
+        border: Border.all(color: border),
       ),
       child: Text(
         label,
-        style: const TextStyle(fontSize: 11, color: Colors.grey),
+        style: theme.textTheme.labelSmall?.copyWith(color: Colors.grey) ??
+            const TextStyle(fontSize: 11, color: Colors.grey),
       ),
     );
   }
@@ -522,17 +535,20 @@ class _SummaryTile extends StatelessWidget {
     required this.accent,
   });
 
-  static const _bg = Color(0xFF101014);
-  static const _border = Color(0xFF24242D);
-
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+
+    final bg = cs.surfaceVariant.withOpacity(theme.brightness == Brightness.dark ? 0.22 : 0.55);
+    final border = cs.outlineVariant.withOpacity(theme.brightness == Brightness.dark ? 0.45 : 0.7);
+
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: _bg,
+        color: bg,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: _border),
+        border: Border.all(color: border),
       ),
       child: Row(
         children: [
@@ -540,9 +556,9 @@ class _SummaryTile extends StatelessWidget {
             width: 42,
             height: 42,
             decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.25),
+              color: cs.surface.withOpacity(theme.brightness == Brightness.dark ? 0.25 : 0.7),
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: _border),
+              border: Border.all(color: border),
             ),
             child: Icon(icon, color: accent),
           ),
@@ -560,11 +576,11 @@ class _SummaryTile extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 2),
-                const Text(
-                  " ",
-                  style: TextStyle(fontSize: 1),
+                Text(
+                  label,
+                  style: theme.textTheme.bodySmall?.copyWith(color: Colors.grey) ??
+                      const TextStyle(color: Colors.grey, fontSize: 12),
                 ),
-                Text(label, style: const TextStyle(color: Colors.grey, fontSize: 12)),
               ],
             ),
           ),
@@ -587,21 +603,25 @@ class _QuickCard extends StatelessWidget {
     required this.onTap,
   });
 
-  static const _card = Color(0xFF14141A);
-  static const _card2 = Color(0xFF101014);
-  static const _border = Color(0xFF24242D);
-
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+
+    final cardColor = theme.cardTheme.color ?? cs.surface;
+    final border = cs.outlineVariant.withOpacity(theme.brightness == Brightness.dark ? 0.55 : 0.8);
+
+    final iconBg = cs.surfaceVariant.withOpacity(theme.brightness == Brightness.dark ? 0.28 : 0.55);
+
     return InkWell(
       borderRadius: BorderRadius.circular(18),
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: _card,
+          color: cardColor,
           borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: _border),
+          border: Border.all(color: border),
         ),
         child: Row(
           children: [
@@ -609,11 +629,11 @@ class _QuickCard extends StatelessWidget {
               width: 46,
               height: 46,
               decoration: BoxDecoration(
-                color: _card2,
+                color: iconBg,
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: _border),
+                border: Border.all(color: border),
               ),
-              child: Icon(icon, color: Colors.white),
+              child: Icon(icon, color: theme.iconTheme.color ?? cs.onSurface),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -622,11 +642,15 @@ class _QuickCard extends StatelessWidget {
                 children: [
                   Text(title, style: const TextStyle(fontWeight: FontWeight.w800)),
                   const SizedBox(height: 4),
-                  Text(subtitle, style: const TextStyle(color: Colors.grey, fontSize: 12)),
+                  Text(
+                    subtitle,
+                    style: theme.textTheme.bodySmall?.copyWith(color: Colors.grey) ??
+                        const TextStyle(color: Colors.grey, fontSize: 12),
+                  ),
                 ],
               ),
             ),
-            const Icon(Icons.chevron_right, color: Colors.grey),
+            Icon(Icons.chevron_right, color: Colors.grey.shade500),
           ],
         ),
       ),

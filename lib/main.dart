@@ -7,7 +7,7 @@ import 'pages/student_login_page.dart';
 import 'pages/faculty_login_page.dart';
 import 'layout/student_shell.dart';
 import 'layout/faculty_shell.dart';
-import 'services/auth_helper.dart'; // for getUserRole(), logout(), supabase
+import 'services/auth_helper.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -23,6 +23,14 @@ Future<void> main() async {
 class MyApp extends StatefulWidget {
   const MyApp({super.key});
 
+  static _MyAppState of(BuildContext context) {
+    final state = context.findAncestorStateOfType<_MyAppState>();
+    if (state == null) {
+      throw Exception("MyApp.of(context) failed: no _MyAppState found in tree.");
+    }
+    return state;
+  }
+
   @override
   State<MyApp> createState() => _MyAppState();
 }
@@ -31,20 +39,37 @@ class _MyAppState extends State<MyApp> {
   StreamSubscription<AuthState>? _authSub;
 
   bool _loading = true;
-
-  /// If user is logged in, we decide shell by role
   bool _loggedIn = false;
   bool _isFaculty = false;
-
-  /// Only for login screen toggling
   bool _showFacultyLogin = false;
+
+  ThemeMode _themeMode = ThemeMode.dark; // default
+
+  ThemeMode get themeMode => _themeMode;
+
+  void toggleTheme() {
+    setState(() {
+      _themeMode =
+          (_themeMode == ThemeMode.dark) ? ThemeMode.light : ThemeMode.dark;
+    });
+  }
+
+  void setThemeMode(ThemeMode mode) {
+    setState(() => _themeMode = mode);
+  }
+
+  // ✅ Helper for switches (Switch uses bool)
+  void _setDarkMode(bool isDark) {
+    setState(() => _themeMode = isDark ? ThemeMode.dark : ThemeMode.light);
+  }
+
+  bool get _isDarkMode => _themeMode == ThemeMode.dark;
 
   @override
   void initState() {
     super.initState();
     _boot();
 
-    // React to login/logout automatically
     _authSub = supabase.auth.onAuthStateChange.listen((data) async {
       final session = data.session;
       if (session == null) {
@@ -57,8 +82,6 @@ class _MyAppState extends State<MyApp> {
         });
         return;
       }
-
-      // Logged in -> decide role
       await _refreshRole();
     });
   }
@@ -74,13 +97,12 @@ class _MyAppState extends State<MyApp> {
       });
       return;
     }
-
     await _refreshRole();
   }
 
   Future<void> _refreshRole() async {
     try {
-      final role = await getUserRole(); // from auth_helper.dart
+      final role = await getUserRole();
       final isFaculty = role == "hod";
 
       if (!mounted) return;
@@ -90,7 +112,6 @@ class _MyAppState extends State<MyApp> {
         _loading = false;
       });
     } catch (_) {
-      // If profile is broken or role can't be read, force logout to avoid weird UI state
       await supabase.auth.signOut();
       if (!mounted) return;
       setState(() {
@@ -103,7 +124,7 @@ class _MyAppState extends State<MyApp> {
   }
 
   Future<void> _logout() async {
-    await logout(); // auth_helper.dart
+    await logout();
     if (!mounted) return;
     setState(() {
       _loggedIn = false;
@@ -125,20 +146,28 @@ class _MyAppState extends State<MyApp> {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      theme: buildDarkTheme(),
+
+      theme: buildLightTheme(),
+      darkTheme: buildDarkTheme(),
+      themeMode: _themeMode,
+
       home: _loading
-          ? const Scaffold(
-              body: Center(child: CircularProgressIndicator()),
-            )
+          ? const Scaffold(body: Center(child: CircularProgressIndicator()))
           : _loggedIn
               ? (_isFaculty
-                  ? FacultyShell(onLogout: _logout)
-                  : StudentShell(onLogout: _logout))
+                  ? FacultyShell(
+                      onLogout: _logout,
+                      isDarkMode: _isDarkMode,
+                      onThemeChanged: _setDarkMode,
+                    )
+                  : StudentShell(
+                      onLogout: _logout,
+                      isDarkMode: _isDarkMode,
+                      onThemeChanged: _setDarkMode,
+                    ))
               : (_showFacultyLogin
                   ? FacultyLoginPage(
                       onLogin: () async {
-                        // FacultyLoginPage already logged in via loginFaculty()
-                        // We just refresh role to pick correct shell
                         setState(() => _loading = true);
                         await _refreshRole();
                       },

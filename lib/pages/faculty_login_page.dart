@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/auth_helper.dart';
+import '../main.dart'; // ✅ for MyApp.of(context).toggleTheme()
 
 class FacultyLoginPage extends StatefulWidget {
   final VoidCallback onLogin;
@@ -16,12 +17,6 @@ class FacultyLoginPage extends StatefulWidget {
 }
 
 class _FacultyLoginPageState extends State<FacultyLoginPage> {
-  // Match your dashboard vibe
-  static const _bg = Color(0xFF0B0B0F);
-  static const _card = Color(0xFF14141A);
-  static const _card2 = Color(0xFF101014);
-  static const _border = Color(0xFF24242D);
-
   final idController = TextEditingController();
   final passController = TextEditingController();
 
@@ -72,7 +67,6 @@ class _FacultyLoginPageState extends State<FacultyLoginPage> {
     } catch (e) {
       final msg = e.toString();
 
-      // Better user-friendly messages
       if (msg.contains("Staff ID and Password")) {
         _setError("Please enter Staff ID and Password");
       } else if (msg.contains("Not a HOD account") || msg.contains("Not a faculty")) {
@@ -94,40 +88,33 @@ class _FacultyLoginPageState extends State<FacultyLoginPage> {
     super.dispose();
   }
 
-  Widget _cardWrap({required Widget child}) {
+  Widget _cardWrap(BuildContext context, {required Widget child}) {
+    final border = Theme.of(context).dividerColor;
+    final cardColor = Theme.of(context).cardTheme.color ?? Theme.of(context).colorScheme.surface;
+
     return Container(
       padding: const EdgeInsets.all(22),
       decoration: BoxDecoration(
-        color: _card,
+        color: cardColor,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: _border),
+        border: Border.all(color: border),
       ),
       child: child,
     );
   }
 
-  InputDecoration _inputDeco(String label, {IconData? icon}) {
+  InputDecoration _inputDeco(BuildContext context, String label, {IconData? icon}) {
     return InputDecoration(
       labelText: label,
-      labelStyle: const TextStyle(color: Colors.grey),
-      prefixIcon: icon == null ? null : Icon(icon, color: Colors.grey),
-      filled: true,
-      fillColor: _card2,
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(color: _border),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(color: Colors.white24),
-      ),
+      prefixIcon: icon == null ? null : Icon(icon),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: _bg,
       body: SafeArea(
         child: Center(
           child: ConstrainedBox(
@@ -135,15 +122,16 @@ class _FacultyLoginPageState extends State<FacultyLoginPage> {
             child: Padding(
               padding: const EdgeInsets.all(18),
               child: _cardWrap(
+                context,
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // Header row with back icon
+                    // Header row with back + title + theme toggle
                     Row(
                       children: [
                         IconButton(
                           onPressed: loading ? null : widget.onBack,
-                          icon: const Icon(Icons.arrow_back, color: Colors.white),
+                          icon: const Icon(Icons.arrow_back),
                           tooltip: "Back",
                         ),
                         const SizedBox(width: 6),
@@ -153,14 +141,20 @@ class _FacultyLoginPageState extends State<FacultyLoginPage> {
                             style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
                           ),
                         ),
+                        IconButton(
+                          tooltip: isDark ? "Switch to Light Mode" : "Switch to Dark Mode",
+                          onPressed: () => MyApp.of(context).toggleTheme(),
+                          icon: Icon(isDark ? Icons.light_mode_outlined : Icons.dark_mode_outlined),
+                        ),
                       ],
                     ),
+
                     const SizedBox(height: 6),
                     const Align(
                       alignment: Alignment.centerLeft,
                       child: Text(
                         "Sign in with your staff account (HOD).",
-                        style: TextStyle(color: Colors.grey, fontSize: 12),
+                        style: TextStyle(fontSize: 12),
                       ),
                     ),
 
@@ -171,8 +165,7 @@ class _FacultyLoginPageState extends State<FacultyLoginPage> {
                       focusNode: _idFocus,
                       textInputAction: TextInputAction.next,
                       autofillHints: const [AutofillHints.username],
-                      style: const TextStyle(color: Colors.white),
-                      decoration: _inputDeco("Staff ID", icon: Icons.badge_outlined),
+                      decoration: _inputDeco(context, "Staff ID", icon: Icons.badge_outlined),
                       onSubmitted: (_) => _passFocus.requestFocus(),
                     ),
                     const SizedBox(height: 12),
@@ -183,8 +176,7 @@ class _FacultyLoginPageState extends State<FacultyLoginPage> {
                       obscureText: true,
                       textInputAction: TextInputAction.done,
                       autofillHints: const [AutofillHints.password],
-                      style: const TextStyle(color: Colors.white),
-                      decoration: _inputDeco("Password", icon: Icons.lock_outline),
+                      decoration: _inputDeco(context, "Password", icon: Icons.lock_outline),
                       onSubmitted: (_) => handleLogin(),
                     ),
 

@@ -10,12 +10,6 @@ class AdminPanelPage extends StatefulWidget {
 }
 
 class _AdminPanelPageState extends State<AdminPanelPage> {
-  // --- THEME (match dashboard vibe) ---
-  static const _bg = Color(0xFF0B0B0F);
-  static const _card = Color(0xFF14141A);
-  static const _card2 = Color(0xFF101014);
-  static const _border = Color(0xFF24242D);
-
   bool loading = true;
   String? error;
 
@@ -57,7 +51,7 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
     return "${months[d.month - 1]} ${d.day}, ${d.year}";
   }
 
-  // ✅ Match student side: support newline-separated OR comma-separated, remove duplicates
+  // ✅ newline-separated OR comma-separated + remove duplicates
   List<String> _parseAttachmentUrls(dynamic v) {
     final raw = (v ?? '').toString().trim();
     if (raw.isEmpty) return [];
@@ -108,23 +102,27 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
     }
   }
 
-  Widget _cardWrap({
+  Widget _cardWrap(
+    BuildContext context, {
     required Widget child,
     EdgeInsets padding = const EdgeInsets.all(16),
   }) {
+    final cs = Theme.of(context).colorScheme;
     return Container(
       padding: padding,
       decoration: BoxDecoration(
-        color: _card,
+        color: cs.surface,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: _border),
+        border: Border.all(color: cs.outlineVariant),
       ),
       child: child,
     );
   }
 
-  Widget _filterPill(String label) {
+  Widget _filterPill(BuildContext context, String label) {
+    final cs = Theme.of(context).colorScheme;
     final selected = filter == label;
+
     return InkWell(
       borderRadius: BorderRadius.circular(999),
       onTap: () async {
@@ -134,16 +132,18 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
-          color: selected ? _card2 : _card,
+          color: selected ? cs.surfaceVariant : cs.surface,
           borderRadius: BorderRadius.circular(999),
-          border: Border.all(color: selected ? Colors.white24 : _border),
+          border: Border.all(
+            color: selected ? cs.primary.withOpacity(0.45) : cs.outlineVariant,
+          ),
         ),
         child: Text(
           label,
           style: TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.w800,
-            color: selected ? Colors.white : Colors.grey,
+            color: selected ? cs.onSurface : cs.onSurfaceVariant,
           ),
         ),
       ),
@@ -236,27 +236,35 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
 
     final ok = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: _card,
-        title: Text(newStatus == "Approved" ? "Approve Request" : "Reject Request"),
-        content: TextField(
-          controller: controller,
-          maxLines: 3,
-          decoration: const InputDecoration(
-            labelText: "HOD Remark (optional)",
+      builder: (ctx) {
+        final cs = Theme.of(ctx).colorScheme;
+
+        return AlertDialog(
+          backgroundColor: cs.surface,
+          surfaceTintColor: cs.surface,
+          title: Text(
+            newStatus == "Approved" ? "Approve Request" : "Reject Request",
+            style: TextStyle(color: cs.onSurface, fontWeight: FontWeight.w800),
           ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text("Cancel"),
+          content: TextField(
+            controller: controller,
+            maxLines: 3,
+            decoration: const InputDecoration(
+              labelText: "HOD Remark (optional)",
+            ),
           ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: Text(newStatus),
-          ),
-        ],
-      ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text("Cancel"),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: Text(newStatus),
+            ),
+          ],
+        );
+      },
     );
 
     if (ok != true) return;
@@ -282,30 +290,36 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
     }
   }
 
-  Widget _emptyState() {
+  Widget _emptyState(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+
     return _cardWrap(
+      context,
       child: Row(
         children: [
           Container(
             width: 44,
             height: 44,
             decoration: BoxDecoration(
-              color: _card2,
+              color: cs.surfaceVariant,
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: _border),
+              border: Border.all(color: cs.outlineVariant),
             ),
-            child: const Icon(Icons.inbox_outlined, color: Colors.grey),
+            child: Icon(Icons.inbox_outlined, color: cs.onSurfaceVariant),
           ),
           const SizedBox(width: 12),
-          const Expanded(
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text("No requests found", style: TextStyle(fontWeight: FontWeight.w900)),
-                SizedBox(height: 4),
+                Text(
+                  "No requests found",
+                  style: TextStyle(fontWeight: FontWeight.w900, color: cs.onSurface),
+                ),
+                const SizedBox(height: 4),
                 Text(
                   "Try another filter or check back later.",
-                  style: TextStyle(color: Colors.grey, fontSize: 12),
+                  style: TextStyle(color: cs.onSurfaceVariant, fontSize: 12),
                 ),
               ],
             ),
@@ -315,7 +329,9 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
     );
   }
 
-  Widget _requestCard(Map<String, dynamic> row) {
+  Widget _requestCard(BuildContext context, Map<String, dynamic> row) {
+    final cs = Theme.of(context).colorScheme;
+
     final status = _safe(row['status'], 'Pending');
     final statusColor = _statusColor(status);
 
@@ -340,6 +356,7 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
 
     return _HoverCard(
       child: _cardWrap(
+        context,
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -351,9 +368,9 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
                   width: 44,
                   height: 44,
                   decoration: BoxDecoration(
-                    color: _card2,
+                    color: cs.surfaceVariant,
                     borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: _border),
+                    border: Border.all(color: cs.outlineVariant),
                   ),
                   child: Icon(_statusIcon(status), color: statusColor),
                 ),
@@ -364,13 +381,16 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
                     children: [
                       Text(
                         "$studentName ($studentId)",
-                        style: const TextStyle(fontWeight: FontWeight.w900),
+                        style: TextStyle(
+                          fontWeight: FontWeight.w900,
+                          color: cs.onSurface,
+                        ),
                         overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 4),
                       Text(
                         "Faculty: $faculty • Submitted: $createdAt",
-                        style: const TextStyle(color: Colors.grey, fontSize: 12),
+                        style: TextStyle(color: cs.onSurfaceVariant, fontSize: 12),
                         overflow: TextOverflow.ellipsis,
                       ),
                     ],
@@ -406,7 +426,10 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
             // LEAVE SUMMARY
             Text(
               "$leaveType • $start → $end ($days day(s))",
-              style: const TextStyle(fontWeight: FontWeight.w800),
+              style: TextStyle(
+                fontWeight: FontWeight.w800,
+                color: cs.onSurface,
+              ),
             ),
 
             const SizedBox(height: 10),
@@ -416,16 +439,19 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
               width: double.infinity,
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: _card2,
+                color: cs.surfaceVariant,
                 borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: _border),
+                border: Border.all(color: cs.outlineVariant),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text("Reason", style: TextStyle(color: Colors.grey, fontSize: 12)),
+                  Text("Reason", style: TextStyle(color: cs.onSurfaceVariant, fontSize: 12)),
                   const SizedBox(height: 6),
-                  Text(reason),
+                  Text(
+                    reason,
+                    style: TextStyle(color: cs.onSurface),
+                  ),
                 ],
               ),
             ),
@@ -438,15 +464,19 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
               child: ExpansionTile(
                 tilePadding: EdgeInsets.zero,
                 childrenPadding: EdgeInsets.zero,
-                title: const Text(
+                title: Text(
                   "Details",
-                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w900),
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w900,
+                    color: cs.onSurface,
+                  ),
                 ),
                 subtitle: Text(
                   (remark.isEmpty && attachments.isEmpty)
                       ? "No additional details"
                       : "View HOD remark / attachments",
-                  style: const TextStyle(color: Colors.grey, fontSize: 12),
+                  style: TextStyle(color: cs.onSurfaceVariant, fontSize: 12),
                 ),
                 children: [
                   if (remark.isNotEmpty)
@@ -456,24 +486,21 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
                         width: double.infinity,
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: _card2,
+                          color: cs.surfaceVariant,
                           borderRadius: BorderRadius.circular(14),
-                          border: Border.all(color: _border),
+                          border: Border.all(color: cs.outlineVariant),
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text(
-                              "HOD Remark",
-                              style: TextStyle(color: Colors.grey, fontSize: 12),
-                            ),
+                            Text("HOD Remark",
+                                style: TextStyle(color: cs.onSurfaceVariant, fontSize: 12)),
                             const SizedBox(height: 6),
-                            Text(remark),
+                            Text(remark, style: TextStyle(color: cs.onSurface)),
                           ],
                         ),
                       ),
                     ),
-
                   if (attachments.isNotEmpty)
                     Padding(
                       padding: const EdgeInsets.only(top: 10),
@@ -481,17 +508,15 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
                         width: double.infinity,
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: _card2,
+                          color: cs.surfaceVariant,
                           borderRadius: BorderRadius.circular(14),
-                          border: Border.all(color: _border),
+                          border: Border.all(color: cs.outlineVariant),
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text(
-                              "Attachments",
-                              style: TextStyle(color: Colors.grey, fontSize: 12),
-                            ),
+                            Text("Attachments",
+                                style: TextStyle(color: cs.onSurfaceVariant, fontSize: 12)),
                             const SizedBox(height: 8),
                             ...attachments.map((url) {
                               final name = _fileNameFromUrl(url);
@@ -511,7 +536,6 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
                         ),
                       ),
                     ),
-
                   const SizedBox(height: 6),
                 ],
               ),
@@ -551,6 +575,7 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
     if (error != null) {
       return Center(
         child: _cardWrap(
+          context,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -563,8 +588,10 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
       );
     }
 
+    final cs = Theme.of(context).colorScheme;
+
     return Container(
-      color: _bg,
+      color: Theme.of(context).scaffoldBackgroundColor,
       child: RefreshIndicator(
         onRefresh: _load,
         child: ListView(
@@ -572,6 +599,7 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
           children: [
             // HEADER
             _cardWrap(
+              context,
               padding: const EdgeInsets.all(18),
               child: Row(
                 children: [
@@ -579,25 +607,29 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
                     width: 48,
                     height: 48,
                     decoration: BoxDecoration(
-                      color: _card2,
+                      color: cs.surfaceVariant,
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: _border),
+                      border: Border.all(color: cs.outlineVariant),
                     ),
-                    child: const Icon(Icons.event_note, color: Colors.white),
+                    child: Icon(Icons.event_note, color: cs.onSurface),
                   ),
                   const SizedBox(width: 12),
-                  const Expanded(
+                  Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
                           "HOD Panel (Leave Requests)",
-                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w900,
+                            color: cs.onSurface,
+                          ),
                         ),
-                        SizedBox(height: 6),
+                        const SizedBox(height: 6),
                         Text(
                           "Approve / reject leave applications and review attachments.",
-                          style: TextStyle(color: Colors.grey, fontSize: 12),
+                          style: TextStyle(color: cs.onSurfaceVariant, fontSize: 12),
                         ),
                       ],
                     ),
@@ -618,20 +650,20 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
               spacing: 10,
               runSpacing: 10,
               children: [
-                _filterPill("All"),
-                _filterPill("Pending"),
-                _filterPill("Approved"),
-                _filterPill("Rejected"),
+                _filterPill(context, "All"),
+                _filterPill(context, "Pending"),
+                _filterPill(context, "Approved"),
+                _filterPill(context, "Rejected"),
               ],
             ),
 
             const SizedBox(height: 14),
 
-            if (items.isEmpty) _emptyState(),
+            if (items.isEmpty) _emptyState(context),
 
             ...items.map((row) => Padding(
                   padding: const EdgeInsets.only(bottom: 12),
-                  child: _requestCard(row),
+                  child: _requestCard(context, row),
                 )),
           ],
         ),

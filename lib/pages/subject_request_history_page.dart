@@ -9,19 +9,11 @@ class SubjectRequestHistoryPage extends StatefulWidget {
       _SubjectRequestHistoryPageState();
 }
 
-class _SubjectRequestHistoryPageState
-    extends State<SubjectRequestHistoryPage> {
-  // --- THEME (locked dashboard vibe) ---
-  static const _bg = Color(0xFF0B0B0F);
-  static const _card = Color(0xFF14141A);
-  static const _card2 = Color(0xFF101014);
-  static const _border = Color(0xFF24242D);
-
+class _SubjectRequestHistoryPageState extends State<SubjectRequestHistoryPage> {
   bool loading = true;
   String? error;
 
   String filter = "All"; // All / Pending / Approved / Rejected
-
   List<Map<String, dynamic>> items = [];
 
   @override
@@ -127,82 +119,93 @@ class _SubjectRequestHistoryPageState
     return "${m[d.month - 1]} ${d.day}, ${d.year}";
   }
 
-  Widget _cardWrap({
+  Widget _cardWrap(
+    BuildContext context, {
     required Widget child,
     EdgeInsets padding = const EdgeInsets.all(16),
   }) {
+    final cs = Theme.of(context).colorScheme;
     return Container(
       padding: padding,
       decoration: BoxDecoration(
-        color: _card,
+        color: cs.surface,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: _border),
+        border: Border.all(color: cs.outlineVariant),
       ),
       child: child,
     );
   }
 
-  Widget _filterPill(String label) {
+  Widget _filterPill(BuildContext context, String label) {
+    final cs = Theme.of(context).colorScheme;
     final selected = filter == label;
 
     return InkWell(
       borderRadius: BorderRadius.circular(999),
       onTap: () async {
-        if (filter == label) return; // avoid useless reload
+        if (filter == label) return;
         setState(() => filter = label);
         await _load();
       },
       child: Container(
-        padding:
-            const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
-          color: selected ? _card2 : _card,
+          color: selected ? cs.surfaceVariant : cs.surface,
           borderRadius: BorderRadius.circular(999),
           border: Border.all(
-              color: selected ? Colors.white24 : _border),
+            color: selected ? cs.primary.withOpacity(0.45) : cs.outlineVariant,
+          ),
         ),
         child: Text(
           label,
           style: TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.w800,
-            color: selected ? Colors.white : Colors.grey,
+            color: selected ? cs.onSurface : cs.onSurfaceVariant,
           ),
         ),
       ),
     );
   }
 
-  Widget _emptyState() {
+  Widget _emptyState(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+
     final message = filter == "All"
         ? "Submit one from Add/Drop Subject and it will appear here."
         : "No $filter requests found.";
 
     return _cardWrap(
+      context,
       child: Row(
         children: [
           Container(
             width: 44,
             height: 44,
             decoration: BoxDecoration(
-              color: _card2,
+              color: cs.surfaceVariant,
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: _border),
+              border: Border.all(color: cs.outlineVariant),
             ),
-            child: const Icon(Icons.inbox_outlined,
-                color: Colors.grey),
+            child: Icon(Icons.inbox_outlined, color: cs.onSurfaceVariant),
           ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text("No subject requests yet",
-                    style: TextStyle(fontWeight: FontWeight.w900)),
+                Text(
+                  "No subject requests yet",
+                  style: TextStyle(
+                    fontWeight: FontWeight.w900,
+                    color: cs.onSurface,
+                  ),
+                ),
                 const SizedBox(height: 4),
-                Text(message,
-                    style: const TextStyle(
-                        color: Colors.grey, fontSize: 12)),
+                Text(
+                  message,
+                  style: TextStyle(color: cs.onSurfaceVariant, fontSize: 12),
+                ),
               ],
             ),
           ),
@@ -211,9 +214,10 @@ class _SubjectRequestHistoryPageState
     );
   }
 
-  Widget _requestCard(Map<String, dynamic> row) {
-    final action =
-        _safe(row['action_type'], 'ADD').toUpperCase();
+  Widget _requestCard(BuildContext context, Map<String, dynamic> row) {
+    final cs = Theme.of(context).colorScheme;
+
+    final action = _safe(row['action_type'], 'ADD').toUpperCase();
     final status = _safe(row['status'], 'Pending');
     final statusColor = _statusColor(status);
 
@@ -236,9 +240,9 @@ class _SubjectRequestHistoryPageState
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: _card,
+        color: cs.surface,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: _border),
+        border: Border.all(color: cs.outlineVariant),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -250,51 +254,48 @@ class _SubjectRequestHistoryPageState
                 width: 44,
                 height: 44,
                 decoration: BoxDecoration(
-                  color: _card2,
+                  color: cs.surfaceVariant,
                   borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: _border),
+                  border: Border.all(color: cs.outlineVariant),
                 ),
                 child: Icon(aIcon, color: aColor),
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
-                  crossAxisAlignment:
-                      CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       "$action • $code",
-                      style: const TextStyle(
-                          fontWeight: FontWeight.w900),
+                      style: TextStyle(
+                        fontWeight: FontWeight.w900,
+                        color: cs.onSurface,
+                      ),
                       overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 4),
                     Text(
                       "$name ($credits cr) • Submitted: $created",
-                      style: const TextStyle(
-                          color: Colors.grey,
-                          fontSize: 12),
+                      style: TextStyle(
+                        color: cs.onSurfaceVariant,
+                        fontSize: 12,
+                      ),
                       overflow: TextOverflow.ellipsis,
                     ),
                   ],
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 10, vertical: 6),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                 decoration: BoxDecoration(
                   color: statusColor.withOpacity(0.12),
-                  borderRadius:
-                      BorderRadius.circular(999),
-                  border: Border.all(
-                      color:
-                          statusColor.withOpacity(0.25)),
+                  borderRadius: BorderRadius.circular(999),
+                  border: Border.all(color: statusColor.withOpacity(0.25)),
                 ),
                 child: Row(
                   children: [
-                    Icon(_statusIcon(status),
-                        size: 14,
-                        color: statusColor),
+                    Icon(_statusIcon(status), size: 14, color: statusColor),
                     const SizedBox(width: 6),
                     Text(
                       status,
@@ -317,22 +318,25 @@ class _SubjectRequestHistoryPageState
             width: double.infinity,
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: _card2,
+              color: cs.surfaceVariant,
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: _border),
+              border: Border.all(color: cs.outlineVariant),
             ),
             child: Column(
-              crossAxisAlignment:
-                  CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text("Reason",
-                    style: TextStyle(
-                        color: Colors.grey,
-                        fontSize: 12)),
+                Text(
+                  "Reason",
+                  style: TextStyle(color: cs.onSurfaceVariant, fontSize: 12),
+                ),
                 const SizedBox(height: 6),
-                Text(reason,
-                    style: const TextStyle(
-                        fontWeight: FontWeight.w600)),
+                Text(
+                  reason,
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    color: cs.onSurface,
+                  ),
+                ),
               ],
             ),
           ),
@@ -343,22 +347,26 @@ class _SubjectRequestHistoryPageState
               width: double.infinity,
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: _card2,
+                color: cs.surfaceVariant,
                 borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: _border),
+                border: Border.all(color: cs.outlineVariant),
               ),
               child: Column(
-                crossAxisAlignment:
-                    CrossAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text("HOD Remark",
-                      style: TextStyle(
-                          color: Colors.grey,
-                          fontSize: 12)),
+                  Text(
+                    "HOD Remark",
+                    style:
+                        TextStyle(color: cs.onSurfaceVariant, fontSize: 12),
+                  ),
                   const SizedBox(height: 6),
-                  Text(remark,
-                      style: const TextStyle(
-                          fontWeight: FontWeight.w600)),
+                  Text(
+                    remark,
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      color: cs.onSurface,
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -370,65 +378,75 @@ class _SubjectRequestHistoryPageState
 
   @override
   Widget build(BuildContext context) {
-    if (loading)
-      return const Center(child: CircularProgressIndicator());
+    if (loading) return const Center(child: CircularProgressIndicator());
 
     if (error != null) {
       return Center(
         child: _cardWrap(
+          context,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Text("Error: $error"),
               const SizedBox(height: 12),
-              ElevatedButton(
-                  onPressed: _load,
-                  child: const Text("Retry")),
+              ElevatedButton(onPressed: _load, child: const Text("Retry")),
             ],
           ),
         ),
       );
     }
 
+    final cs = Theme.of(context).colorScheme;
+
     return Container(
-      color: _bg,
+      color: Theme.of(context).scaffoldBackgroundColor,
       child: RefreshIndicator(
         onRefresh: _load,
         child: ListView(
           padding: const EdgeInsets.all(18),
           children: [
             _cardWrap(
+              context,
               padding: const EdgeInsets.all(18),
-              child: const Text(
-                "My Subject Requests",
-                style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w900),
+              child: Row(
+                children: [
+                  Icon(Icons.request_page_outlined, color: cs.onSurface),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      "My Subject Requests",
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w900,
+                        color: cs.onSurface,
+                      ),
+                    ),
+                  ),
+                  TextButton.icon(
+                    onPressed: _load,
+                    icon: const Icon(Icons.refresh, size: 18),
+                    label: const Text("Refresh"),
+                  ),
+                ],
               ),
             ),
-
             const SizedBox(height: 14),
-
             Wrap(
               spacing: 10,
               runSpacing: 10,
               children: [
-                _filterPill("All"),
-                _filterPill("Pending"),
-                _filterPill("Approved"),
-                _filterPill("Rejected"),
+                _filterPill(context, "All"),
+                _filterPill(context, "Pending"),
+                _filterPill(context, "Approved"),
+                _filterPill(context, "Rejected"),
               ],
             ),
-
             const SizedBox(height: 14),
-
-            if (items.isEmpty) _emptyState(),
-
+            if (items.isEmpty) _emptyState(context),
             ...items.map(
               (row) => Padding(
-                padding:
-                    const EdgeInsets.only(bottom: 12),
-                child: _requestCard(row),
+                padding: const EdgeInsets.only(bottom: 12),
+                child: _requestCard(context, row),
               ),
             ),
           ],
