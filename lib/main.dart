@@ -11,6 +11,7 @@ import 'layout/faculty_shell.dart';
 import 'layout/admin_shell.dart';
 
 import 'services/auth_helper.dart';
+import 'app/app_keyboard.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -219,6 +220,13 @@ class _MyAppState extends State<MyApp> {
       theme: buildLightTheme(),
       darkTheme: buildDarkTheme(),
       themeMode: _themeMode,
+
+      builder: (context, child) {
+        return AppKeyboard(
+          child: child ?? const SizedBox.shrink(),
+        );
+      },
+      
       home: _home(),
     );
   }
