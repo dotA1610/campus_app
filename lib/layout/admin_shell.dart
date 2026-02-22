@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
-import '../pages/admin_panel_page.dart';
-import '../pages/hod_subject_requests_page.dart';
 
-class FacultyShell extends StatefulWidget {
+import '../pages/admin_dashboard_page.dart';
+import '../pages/manage_users_page.dart';
+
+class AdminShell extends StatefulWidget {
   final VoidCallback onLogout;
 
   final bool isDarkMode;
   final ValueChanged<bool> onThemeChanged;
 
-  const FacultyShell({
+  const AdminShell({
     super.key,
     required this.onLogout,
     required this.isDarkMode,
@@ -16,16 +17,20 @@ class FacultyShell extends StatefulWidget {
   });
 
   @override
-  State<FacultyShell> createState() => _FacultyShellState();
+  State<AdminShell> createState() => _AdminShellState();
 }
 
-class _FacultyShellState extends State<FacultyShell> {
+class _AdminShellState extends State<AdminShell> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   int index = 0;
 
   void _go(int i, {bool closeDrawer = false}) {
+    if (!mounted) return;
     setState(() => index = i);
-    if (closeDrawer) Navigator.pop(context);
+
+    if (closeDrawer && Navigator.canPop(context)) {
+      Navigator.pop(context);
+    }
   }
 
   @override
@@ -34,9 +39,12 @@ class _FacultyShellState extends State<FacultyShell> {
     final cs = theme.colorScheme;
     final dividerColor = theme.dividerColor;
 
+    // ✅ Sidebar tabs (Dashboard -> Manage Users)
     final pages = [
-      const AdminPanelPage(),
-      const HodSubjectRequestsPage(),
+      AdminDashboardPage(
+        onOpenManageUsers: () => _go(1), // ✅ dashboard button opens Manage Users tab
+      ),
+      const ManageUsersPage(),
     ];
 
     return LayoutBuilder(
@@ -95,11 +103,11 @@ class _FacultyShellState extends State<FacultyShell> {
   String _titleForIndex(int i) {
     switch (i) {
       case 0:
-        return "Leave Requests";
+        return "Admin Dashboard";
       case 1:
-        return "Subject Requests";
+        return "Manage Users";
       default:
-        return "Faculty Dashboard";
+        return "Admin";
     }
   }
 
@@ -163,6 +171,7 @@ class _FacultyShellState extends State<FacultyShell> {
         children: [
           const SizedBox(height: 14),
 
+          // Brand
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Container(
@@ -177,7 +186,8 @@ class _FacultyShellState extends State<FacultyShell> {
                   CircleAvatar(
                     radius: 16,
                     backgroundColor: cs.primary.withOpacity(0.18),
-                    child: Icon(Icons.admin_panel_settings, size: 18, color: cs.primary),
+                    child:
+                        Icon(Icons.shield_outlined, size: 18, color: cs.primary),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -209,14 +219,21 @@ class _FacultyShellState extends State<FacultyShell> {
                       style: TextStyle(color: Colors.grey, fontSize: 12),
                     ),
                   ),
-                  navItem(i: 0, icon: Icons.event_note, label: "Leave Requests"),
+                  navItem(
+                      i: 0,
+                      icon: Icons.dashboard_outlined,
+                      label: "Dashboard"),
                   const SizedBox(height: 8),
-                  navItem(i: 1, icon: Icons.library_add, label: "Subject Requests"),
+                  navItem(
+                      i: 1,
+                      icon: Icons.manage_accounts_outlined,
+                      label: "Manage Users"),
                 ],
               ),
             ),
           ),
 
+          // Theme toggle
           Padding(
             padding: const EdgeInsets.fromLTRB(14, 0, 14, 12),
             child: Container(
@@ -251,6 +268,7 @@ class _FacultyShellState extends State<FacultyShell> {
             ),
           ),
 
+          // Logout
           Padding(
             padding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
             child: Container(

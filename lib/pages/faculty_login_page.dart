@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/auth_helper.dart';
-import '../main.dart'; // ✅ for MyApp.of(context).toggleTheme()
+import '../main.dart'; // for MyApp.of(context).toggleTheme()
 
 class FacultyLoginPage extends StatefulWidget {
   final VoidCallback onLogin;
@@ -31,6 +31,27 @@ class _FacultyLoginPageState extends State<FacultyLoginPage> {
     setState(() => error = msg);
   }
 
+  String _prettyError(Object e) {
+    final msg = e.toString();
+
+    if (msg.contains("Please enter Staff ID and Password")) {
+      return "Please enter Staff ID and Password";
+    }
+
+    // From auth_helper.dart
+    if (msg.contains("Not a faculty/admin account")) {
+      return "Not a faculty/admin account";
+    }
+
+    // Supabase common auth errors
+    if (msg.toLowerCase().contains("invalid login credentials")) {
+      return "Invalid credentials. Please check your Staff ID and password.";
+    }
+
+    // fallback
+    return "Login failed. Please check your credentials and try again.";
+  }
+
   Future<void> handleLogin() async {
     if (loading) return;
 
@@ -46,34 +67,19 @@ class _FacultyLoginPageState extends State<FacultyLoginPage> {
       final password = passController.text.trim();
 
       if (staffId.isEmpty || password.isEmpty) {
-        throw "Please enter Staff ID and Password";
+        throw AuthHelperException("Please enter Staff ID and Password");
       }
 
+      // ✅ loginFaculty already enforces: hod OR admin (based on your auth_helper.dart)
       await loginFaculty(
         staffId: staffId,
         password: password,
       );
 
-      final role = await getUserRole();
-
-      // ✅ If logged in but not HOD, sign out to avoid leaving a bad session
-      if (role != "hod") {
-        await supabase.auth.signOut();
-        throw "Not a HOD account";
-      }
-
       if (!mounted) return;
       widget.onLogin();
     } catch (e) {
-      final msg = e.toString();
-
-      if (msg.contains("Staff ID and Password")) {
-        _setError("Please enter Staff ID and Password");
-      } else if (msg.contains("Not a HOD account") || msg.contains("Not a faculty")) {
-        _setError("Not a HOD account");
-      } else {
-        _setError("Login failed. Please check your credentials and try again.");
-      }
+      _setError(_prettyError(e));
     } finally {
       if (mounted) setState(() => loading = false);
     }
@@ -90,7 +96,8 @@ class _FacultyLoginPageState extends State<FacultyLoginPage> {
 
   Widget _cardWrap(BuildContext context, {required Widget child}) {
     final border = Theme.of(context).dividerColor;
-    final cardColor = Theme.of(context).cardTheme.color ?? Theme.of(context).colorScheme.surface;
+    final cardColor =
+        Theme.of(context).cardTheme.color ?? Theme.of(context).colorScheme.surface;
 
     return Container(
       padding: const EdgeInsets.all(22),
@@ -126,7 +133,6 @@ class _FacultyLoginPageState extends State<FacultyLoginPage> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // Header row with back + title + theme toggle
                     Row(
                       children: [
                         IconButton(
@@ -137,14 +143,16 @@ class _FacultyLoginPageState extends State<FacultyLoginPage> {
                         const SizedBox(width: 6),
                         const Expanded(
                           child: Text(
-                            "Faculty Login",
+                            "Faculty / Admin Login",
                             style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
                           ),
                         ),
                         IconButton(
                           tooltip: isDark ? "Switch to Light Mode" : "Switch to Dark Mode",
                           onPressed: () => MyApp.of(context).toggleTheme(),
-                          icon: Icon(isDark ? Icons.light_mode_outlined : Icons.dark_mode_outlined),
+                          icon: Icon(
+                            isDark ? Icons.light_mode_outlined : Icons.dark_mode_outlined,
+                          ),
                         ),
                       ],
                     ),
@@ -153,7 +161,7 @@ class _FacultyLoginPageState extends State<FacultyLoginPage> {
                     const Align(
                       alignment: Alignment.centerLeft,
                       child: Text(
-                        "Sign in with your staff account (HOD).",
+                        "Sign in with your staff account (HOD or Admin).",
                         style: TextStyle(fontSize: 12),
                       ),
                     ),

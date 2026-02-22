@@ -22,6 +22,31 @@ class AuthHelperException implements Exception {
 }
 
 /// ==============================
+/// ROLE HELPERS
+/// ==============================
+
+String _normRole(dynamic role) => (role ?? '').toString().trim().toLowerCase();
+
+bool isStudentRole(String role) => _normRole(role) == "student";
+bool isHodRole(String role) => _normRole(role) == "hod";
+bool isAdminRole(String role) => _normRole(role) == "admin";
+
+/// Faculty login page is used for BOTH hod + admin
+bool isFacultyOrAdminRole(String role) {
+  final r = _normRole(role);
+  return r == "hod" || r == "admin";
+}
+
+/// Optional helper if you want to enforce roles elsewhere
+Future<void> requireRole(bool Function(String role) predicate, String errorMsg) async {
+  final role = await getUserRole();
+  if (!predicate(role)) {
+    await logout();
+    throw AuthHelperException(errorMsg);
+  }
+}
+
+/// ==============================
 /// AUTH
 /// ==============================
 
@@ -41,15 +66,10 @@ Future<void> loginStudent({
     password: pw,
   );
 
-  // ✅ Enforce role: if not student, logout to avoid bad session
+  // ✅ Enforce role: only student
   try {
-    final role = await getUserRole();
-    if (role != 'student') {
-      await logout();
-      throw AuthHelperException("Not a student account");
-    }
-  } catch (e) {
-    // if profile fetch fails etc, logout for safety
+    await requireRole(isStudentRole, "Not a student account");
+  } catch (_) {
     await logout();
     rethrow;
   }
@@ -71,14 +91,10 @@ Future<void> loginFaculty({
     password: pw,
   );
 
-  // ✅ Enforce role: if not hod, logout to avoid bad session
+  // ✅ UPDATED: allow hod OR admin
   try {
-    final role = await getUserRole();
-    if (role != 'hod') {
-      await logout();
-      throw AuthHelperException("Not a faculty/HOD account");
-    }
-  } catch (e) {
+    await requireRole(isFacultyOrAdminRole, "Not a faculty/admin account");
+  } catch (_) {
     await logout();
     rethrow;
   }
@@ -115,10 +131,9 @@ Future<Map<String, dynamic>> getMyProfile() async {
 
 Future<String> getUserRole() async {
   final profile = await getMyProfile();
-  final role = (profile['role'] ?? '').toString().trim();
+  final role = _normRole(profile['role']);
 
-  // ✅ safer: do NOT default to "student"
-  // If role is empty, treat as invalid setup
+  // ✅ safer: do NOT default to anything
   if (role.isEmpty) {
     throw AuthHelperException("Role not set in profiles table for this user.");
   }
@@ -146,8 +161,7 @@ Future<String> getHodUserIdForFaculty(String faculty) async {
       .order('staff_id', ascending: true)
       .limit(1);
 
-  final list =
-      (rows as List).map((e) => Map<String, dynamic>.from(e)).toList();
+  final list = (rows as List).map((e) => Map<String, dynamic>.from(e)).toList();
 
   if (list.isEmpty) {
     throw AuthHelperException(
@@ -183,8 +197,14 @@ Future<void> submitLeaveApplication({
   }
 
   final profile = await getMyProfile();
-  final faculty = (profile['faculty'] ?? '').toString().trim();
 
+  // ✅ Only students should submit leave
+  final role = _normRole(profile['role']);
+  if (!isStudentRole(role)) {
+    throw AuthHelperException("Only students can submit leave applications.");
+  }
+
+  final faculty = (profile['faculty'] ?? '').toString().trim();
   final hodUserId = await getHodUserIdForFaculty(faculty);
 
   final payload = <String, dynamic>{
@@ -198,7 +218,7 @@ Future<void> submitLeaveApplication({
     'status': 'Pending',
     'hod_remark': null,
     'attachment_url': attachmentUrl.trim().isEmpty ? null : attachmentUrl.trim(),
-    'faculty': faculty, // you said you added this column
+    'faculty': faculty,
   };
 
   await supabase.from('leave_applications').insert(payload);
